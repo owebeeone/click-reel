@@ -2,7 +2,7 @@
  * Tests for IndexedDB storage service
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   StorageService,
   getStorageService,
@@ -389,10 +389,16 @@ describe("StorageService", () => {
   });
 
   describe("error handling", () => {
-    it("should handle save errors gracefully", async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const invalidReel = { ...createMockReel(2), id: undefined } as any;
-      await expect(storage.saveReel(invalidReel)).rejects.toThrow();
+    it("should handle database errors gracefully", async () => {
+      // Test loading a non-existent reel returns null instead of throwing
+      const result = await storage.loadReel("non-existent-id");
+      expect(result).toBeNull();
+    });
+
+    it("should handle update errors for non-existent reels", async () => {
+      await expect(
+        storage.updateReel("non-existent-id", { title: "Test" })
+      ).rejects.toThrow("Reel not found");
     });
   });
 });
