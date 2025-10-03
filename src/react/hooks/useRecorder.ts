@@ -2,7 +2,7 @@
  * Hook for recorder operations and lifecycle management
  */
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { nanoid } from "nanoid";
 import { useClickReelContext } from "../context/ClickReelContext";
 import { ActionType, type RecorderAPI, type Reel } from "../../types";
@@ -10,12 +10,23 @@ import { getStorageService } from "../../core/storage";
 import { exportAndDownload, type ExportFormat } from "../../core/export";
 import { captureFrame } from "../../core/capture";
 import { generateReelMetadata } from "../../core/metadata";
+import { useClickCapture } from "./useClickCapture";
 
 /**
  * Hook for recording operations
  */
 export function useRecorder(): RecorderAPI {
   const { state, dispatch } = useClickReelContext();
+  const captureRootRef = useRef<HTMLElement | null>(null);
+
+  // Set up the capture root element
+  useEffect(() => {
+    captureRootRef.current =
+      document.getElementById("root") ||
+      document.querySelector("[data-reactroot]") ||
+      document.querySelector("#__next") ||
+      document.body;
+  }, []);
 
   const startRecording = useCallback(async () => {
     try {
@@ -256,6 +267,98 @@ export function useRecorder(): RecorderAPI {
   const clearError = useCallback(() => {
     dispatch({ type: ActionType.CLEAR_ERROR });
   }, [dispatch]);
+
+  // Handler for when a click is captured while armed
+  const handleClickCapture = useCallback(
+    async (event: PointerEvent) => {
+      if (!state.currentReel) return;
+
+      try {
+        dispatch({
+          type: ActionType.SET_LOADING,
+          payload: { key: "capturing", value: true },
+        });
+
+        console.log("Capturing click at", {
+          x: event.clientX,
+          y: event.clientY,
+        });
+
+        // Find the root element to capture
+        const captureRoot =
+          document.getElementById("root") ||
+          document.querySelector("[data-reactroot]") ||
+          document.querySelector("#__next") ||
+          document.body;
+
+        // Capture the frame with the real pointer event
+        const frame = await captureFrame(
+          captureRoot,
+          event,
+          {
+            root: captureRoot,
+            scale: state.currentReel.settings.scale,
+            maxWidth: state.currentReel.settings.maxWidth,
+            maxHeight: state.currentReel.settings.maxHeight,
+            markerStyle: {
+              size: state.currentReel.settings.markerSize,
+              color: state.currentReel.settings.markerColor,
+            },
+            obfuscationEnabled: state.currentReel.settings.obfuscationEnabled,
+          },
+          state.currentReel.id,
+          state.currentReel.frames.length,
+          "pre-click"
+        );
+
+        // Add frame to reel
+        const updatedReel = {
+          ...state.currentReel,
+          frames: [...state.currentReel.frames, frame],
+        };
+
+        dispatch({
+          type: ActionType.START_RECORDING,
+          payload: updatedReel,
+        });
+
+        dispatch({
+          type: ActionType.ADD_FRAME,
+          payload: { reelId: state.currentReel.id, frameId: frame.id },
+        });
+
+        // Automatically disarm after capture
+        dispatch({ type: ActionType.DISARM });
+
+        console.log("Click frame captured successfully!");
+      } catch (error) {
+        console.error("Failed to capture click frame:", error);
+        dispatch({
+          type: ActionType.SET_ERROR,
+          payload: {
+            message: "Failed to capture click frame",
+            timestamp: Date.now(),
+            details: error,
+          },
+        });
+      } finally {
+        dispatch({
+          type: ActionType.SET_LOADING,
+          payload: { key: "capturing", value: false },
+        });
+      }
+    },
+    [dispatch, state.currentReel]
+  );
+
+  // Use click capture hook to listen for clicks when armed
+  useClickCapture({
+    armed: state.recorderState === "armed",
+    root: captureRootRef.current!,
+    onCapture: handleClickCapture,
+    isRecording:
+      state.recorderState === "recording" || state.recorderState === "armed",
+  });
 
   return {
     state: state.recorderState,
