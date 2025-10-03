@@ -1,14 +1,17 @@
 {
   "name": "click-reel",
   "private": false,
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "description": "A browser-side interaction recorder for creating animated GIFs of UI events.",
   "type": "module",
   "main": "./dist/click-reel.umd.js",
   "module": "./dist/click-reel.es.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/click-reel.es.js",
-      "require": "./dist/click-reel.umd.js"
+      "require": "./dist/click-reel.umd.js",
+      "types": "./dist/index.d.ts"
     }
   },
   "files": [
@@ -16,7 +19,8 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && tsc",
+    "prepare": "vite build && tsc",
     "preview": "vite preview",
     "test": "vitest"
   },
@@ -25,12 +29,30 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@testing-library/react": "^15.0.0",
+    "@types/node": "^20.12.2",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "@typescript-eslint/parser": "^7.2.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.6",
     "jsdom": "^24.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "typescript": "^5.2.2",
     "vite": "^7.1.7",
+    "vite-plugin-dts": "^4.5.4",
     "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "gifenc": "^1.0.3",
+    "html-to-image": "^1.11.11",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.368.0",
+    "react-draggable": "^4.4.6"
   },
   "sideEffects": false,
   "license": "MIT"
