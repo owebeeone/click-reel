@@ -739,30 +739,29 @@ function useKeyboardShortcuts(shortcuts: Shortcuts): void;
 
 **Tasks**:
 
-- [ ] Implement InventoryList component
+- [x] Implement InventoryList component
   - Display list of saved reels
   - Show thumbnails (first frame)
   - Display title, description, timestamp, frame count
   - Sort options (date, title, duration)
   - Search/filter functionality
-- [ ] Implement InventoryItem component
+- [x] Implement InventoryItem component
   - Thumbnail preview
   - Metadata display
   - Action buttons (play, download, delete)
   - Edit title/description inline
-- [ ] Implement ReelPlayer component
+- [x] Implement ReelPlayer component
   - Display GIF/APNG in modal or dedicated view
   - Playback controls (play/pause if possible with canvas)
   - Frame-by-frame navigation
   - Metadata viewer (show click coordinates, element paths)
-- [ ] Create download UI
+- [x] Create download UI
   - Format selection (GIF, APNG, ZIP)
-  - Quality settings
-  - Progress indicator
-- [ ] Implement delete confirmation
+  - Progress indicator (integrated with export buttons)
+- [x] Implement delete confirmation
   - Modal dialog
   - Cascade delete warning
-- [ ] Add empty state UI
+- [x] Add empty state UI
   - Onboarding message
   - Getting started guide
 - [ ] Write component tests

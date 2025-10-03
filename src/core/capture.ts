@@ -61,8 +61,29 @@ export async function captureFrame(
       ...DEFAULT_MARKER_STYLE,
       ...options.markerStyle,
     };
+
+    // When capturing documentElement with a scroll transform, position marker
+    // in the absolute page coordinates (viewport + scroll)
+    let markerCoords = relativeCoords;
+    if (root === document.documentElement) {
+      // The capture will apply transform: translate(-scrollX, -scrollY)
+      // So we need to position the marker at viewport + scroll
+      // to compensate for the transform
+      markerCoords = {
+        x: viewportCoords.x + scrollPosition.x,
+        y: viewportCoords.y + scrollPosition.y,
+      };
+    }
+
+    console.log("Marker positioning:", {
+      viewportCoords,
+      scrollPosition,
+      markerCoords,
+      willApplyTransform: root === document.documentElement,
+    });
+
     markerElement = createMarkerElement(
-      relativeCoords,
+      markerCoords,
       pointerEvent.button,
       markerStyle
     );
@@ -163,10 +184,36 @@ async function captureToDataURL(
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
 
+    // Get the background color of the page/element
+    const computedStyle = window.getComputedStyle(element);
+    let backgroundColor = computedStyle.backgroundColor;
+
+    // If transparent, try to get body background
+    if (
+      backgroundColor === "transparent" ||
+      backgroundColor === "rgba(0, 0, 0, 0)"
+    ) {
+      const bodyStyle = window.getComputedStyle(document.body);
+      backgroundColor = bodyStyle.backgroundColor;
+    }
+
+    // If still transparent, default to white
+    if (
+      backgroundColor === "transparent" ||
+      backgroundColor === "rgba(0, 0, 0, 0)"
+    ) {
+      backgroundColor = "#ffffff";
+    }
+
+    // Get current scroll position - we need to capture what's currently visible
+    const currentScrollX = window.scrollX || window.pageXOffset;
+    const currentScrollY = window.scrollY || window.pageYOffset;
+
     const captureOptions: Record<string, unknown> = {
       quality: 0.95,
       pixelRatio: options.scale || 2,
       cacheBust: true,
+      backgroundColor, // Add background color to prevent transparency
       filter: (node: HTMLElement) => {
         // Additional filter to exclude elements with data-screenshot-exclude
         return (
@@ -175,15 +222,34 @@ async function captureToDataURL(
       },
     };
 
-    // Only set width/height if they are explicitly defined and > 0
+    // Set width/height to capture only the visible viewport
     if (options.maxWidth && options.maxWidth > 0) {
       captureOptions.width = options.maxWidth;
-    }
-    if (options.maxHeight && options.maxHeight > 0) {
-      captureOptions.height = options.maxHeight;
+    } else {
+      captureOptions.width = window.innerWidth;
     }
 
-    console.log("Capture options:", captureOptions);
+    if (options.maxHeight && options.maxHeight > 0) {
+      captureOptions.height = options.maxHeight;
+    } else {
+      captureOptions.height = window.innerHeight;
+    }
+
+    // Use style to offset the viewport capture
+    // This shifts the rendering to show the currently scrolled content
+    const styleTransform = {
+      transform: `translate(${-currentScrollX}px, ${-currentScrollY}px)`,
+      transformOrigin: "top left",
+    };
+    captureOptions.style = styleTransform;
+
+    console.log("Capture options with scroll offset:", {
+      width: captureOptions.width,
+      height: captureOptions.height,
+      scrollX: currentScrollX,
+      scrollY: currentScrollY,
+      transform: styleTransform.transform,
+    });
 
     const dataUrl = await htmlToImage.toPng(element, captureOptions);
 
@@ -241,25 +307,58 @@ async function captureToDataURL(
 /**
  * Captures DOM element to Blob
  */
-export async function captureToBlob(element: HTMLElement, options: CaptureOptions): Promise<Blob> {
+export async function captureToBlob(
+  element: HTMLElement,
+  options: CaptureOptions
+): Promise<Blob> {
   try {
+    // Get the background color of the page/element
+    const computedStyle = window.getComputedStyle(element);
+    let backgroundColor = computedStyle.backgroundColor;
+
+    // If transparent, try to get body background
+    if (
+      backgroundColor === "transparent" ||
+      backgroundColor === "rgba(0, 0, 0, 0)"
+    ) {
+      const bodyStyle = window.getComputedStyle(document.body);
+      backgroundColor = bodyStyle.backgroundColor;
+    }
+
+    // If still transparent, default to white
+    if (
+      backgroundColor === "transparent" ||
+      backgroundColor === "rgba(0, 0, 0, 0)"
+    ) {
+      backgroundColor = "#ffffff";
+    }
+
+    // Get current scroll position to capture what's visible
+    const currentScrollX = window.scrollX || window.pageXOffset;
+    const currentScrollY = window.scrollY || window.pageYOffset;
+
     const blob = await htmlToImage.toBlob(element, {
       quality: 0.95,
       pixelRatio: options.scale || 2,
-      width: options.maxWidth,
-      height: options.maxHeight,
+      width: options.maxWidth || window.innerWidth,
+      height: options.maxHeight || window.innerHeight,
       cacheBust: true,
+      backgroundColor, // Add background color to prevent transparency
+      style: {
+        transform: `translate(${-currentScrollX}px, ${-currentScrollY}px)`,
+        transformOrigin: "top left",
+      },
     });
 
     if (!blob) {
-      throw new Error('Failed to generate blob from element');
+      throw new Error("Failed to generate blob from element");
     }
 
     return blob;
   } catch (error) {
-    console.error('Error capturing to blob:', error);
+    console.error("Error capturing to blob:", error);
     throw new Error(
-      `Failed to capture to blob: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Failed to capture to blob: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   }
 }

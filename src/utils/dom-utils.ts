@@ -155,24 +155,25 @@ export function createMarkerElement(
     borderColor?: string;
   } = {}
 ): HTMLElement {
-  const marker = document.createElement('div');
-  marker.setAttribute('data-click-reel-marker', 'true');
-  marker.setAttribute(EXCLUDE_ATTRIBUTE, 'true');
+  const marker = document.createElement("div");
+  marker.setAttribute("data-click-reel-marker", "true");
+  // DO NOT exclude the marker - we want it to appear in the screenshot!
+  // marker.setAttribute(EXCLUDE_ATTRIBUTE, 'true');
 
   const size = style.size || 50;
-  const color = style.color || '#ff0000';
+  const color = style.color || "#ff0000";
   const opacity = style.opacity ?? 0.5;
   const borderWidth = style.borderWidth || 2;
-  const borderColor = style.borderColor || '#ffffff';
+  const borderColor = style.borderColor || "#ffffff";
 
   // Different styles for different button types
-  let shape = 'circle';
+  let shape = "circle";
   if (buttonType === 1) {
     // Middle click - square
-    shape = 'square';
+    shape = "square";
   } else if (buttonType === 2) {
     // Right click - triangle
-    shape = 'triangle';
+    shape = "triangle";
   }
 
   marker.style.cssText = `
@@ -184,16 +185,16 @@ export function createMarkerElement(
     background-color: ${color};
     opacity: ${opacity};
     border: ${borderWidth}px solid ${borderColor};
-    border-radius: ${shape === 'circle' ? '50%' : shape === 'square' ? '0' : '0'};
+    border-radius: ${shape === "circle" ? "50%" : shape === "square" ? "0" : "0"};
     pointer-events: none;
     z-index: 999999;
     ${
-      shape === 'triangle'
+      shape === "triangle"
         ? `
       clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
       border-radius: 0;
     `
-        : ''
+        : ""
     }
   `;
 

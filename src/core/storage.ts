@@ -90,6 +90,16 @@ export class StorageService {
     const tx = db.transaction([REELS_STORE, FRAMES_STORE], "readwrite");
 
     try {
+      // Generate thumbnail from first frame
+      let thumbnailUrl: string | undefined;
+      if (reel.frames.length > 0) {
+        const firstFrame = reel.frames[0];
+        thumbnailUrl =
+          typeof firstFrame.image === "string"
+            ? firstFrame.image
+            : URL.createObjectURL(firstFrame.image);
+      }
+
       // Save reel metadata
       const reelData = {
         id: reel.id,
@@ -101,6 +111,7 @@ export class StorageService {
         duration: reel.metadata.duration,
         settings: reel.settings,
         metadata: reel.metadata,
+        thumbnailUrl,
       };
 
       await tx.objectStore(REELS_STORE).put(reelData);
@@ -209,7 +220,7 @@ export class StorageService {
       const reels = await db.getAll(REELS_STORE);
       
       return reels
-        .map(reel => ({
+        .map((reel) => ({
           id: reel.id,
           title: reel.title,
           description: reel.description,
@@ -217,6 +228,7 @@ export class StorageService {
           endTime: reel.endTime,
           frameCount: reel.frameCount,
           estimatedSize: reel.estimatedSize || 0,
+          thumbnailUrl: reel.thumbnailUrl,
         }))
         .sort((a, b) => b.startTime - a.startTime); // Most recent first
     } catch (error) {

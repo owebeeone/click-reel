@@ -6,6 +6,8 @@ import { useState } from "react";
 import {
   ClickReelProvider,
   ClickReelRecorder,
+  ClickReelInventory,
+  MarkerDebugDialog,
   useRecorder,
   useStorage,
   useClickReelContext,
@@ -28,6 +30,7 @@ function DemoContent({
   const [storageInfo, setStorageInfo] = useState<string>("");
   const [recorderVisible, setRecorderVisible] = useState(true);
   const [obfuscationEnabled, setObfuscationEnabled] = useState(false);
+  const [showDebugDialog, setShowDebugDialog] = useState(false);
 
   // Set up keyboard shortcuts
   useKeyboardShortcuts({
@@ -609,6 +612,93 @@ function DemoContent({
           </div>
         )}
       </section>
+
+      {/* Inventory Section */}
+      <section style={{ marginTop: "3rem" }}>
+        <h2
+          style={{
+            fontSize: "2rem",
+            fontWeight: "bold",
+            marginBottom: "1.5rem",
+            color: "#1e293b",
+          }}
+        >
+          📼 Click Reel Inventory
+        </h2>
+        <ClickReelInventory
+          onStartRecording={handleStartRecording}
+          style={{ padding: 0 }}
+        />
+      </section>
+
+      {/* Debug Tool */}
+      {recorder.currentReel && recorder.currentReel.frames.length > 0 && (
+        <section style={{ marginTop: "2rem" }}>
+          <button
+            onClick={() => setShowDebugDialog(true)}
+            style={{
+              padding: "12px 24px",
+              background: "#8b5cf6",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "16px",
+              fontWeight: 600,
+            }}
+          >
+            🐛 Open Marker Debug Tool
+          </button>
+          <p style={{ fontSize: "14px", color: "#666", marginTop: "0.5rem" }}>
+            Click to debug marker positioning on the last captured frame
+          </p>
+        </section>
+      )}
+
+      {/* Debug Dialog */}
+      {recorder.currentReel && recorder.currentReel.frames.length > 0 && (
+        <MarkerDebugDialog
+          isOpen={showDebugDialog}
+          onClose={() => setShowDebugDialog(false)}
+          frameDataUrl={
+            typeof recorder.currentReel.frames[
+              recorder.currentReel.frames.length - 1
+            ].image === "string"
+              ? (recorder.currentReel.frames[
+                  recorder.currentReel.frames.length - 1
+                ].image as string)
+              : ""
+          }
+          originalClickX={
+            recorder.currentReel.frames[recorder.currentReel.frames.length - 1]
+              .metadata.viewportCoords.x
+          }
+          originalClickY={
+            recorder.currentReel.frames[recorder.currentReel.frames.length - 1]
+              .metadata.viewportCoords.y
+          }
+          viewportCoords={
+            recorder.currentReel.frames[recorder.currentReel.frames.length - 1]
+              .metadata.viewportCoords
+          }
+          scrollPosition={
+            recorder.currentReel.frames[recorder.currentReel.frames.length - 1]
+              .metadata.scrollPosition
+          }
+          markerCoords={
+            recorder.currentReel.frames[recorder.currentReel.frames.length - 1]
+              .metadata.viewportCoords
+          }
+          captureWidth={
+            recorder.currentReel.frames[recorder.currentReel.frames.length - 1]
+              .metadata.viewportSize.width
+          }
+          captureHeight={
+            recorder.currentReel.frames[recorder.currentReel.frames.length - 1]
+              .metadata.viewportSize.height
+          }
+        />
+      )}
 
       {/* Recorder Component */}
       {/* Recorder Testing - Now using floating recorder at top */}

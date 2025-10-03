@@ -19,13 +19,10 @@ export function useRecorder(): RecorderAPI {
   const { state, dispatch } = useClickReelContext();
   const captureRootRef = useRef<HTMLElement | null>(null);
 
-  // Set up the capture root element
+  // Set up the capture root element - use document.documentElement to capture entire viewport
   useEffect(() => {
-    captureRootRef.current =
-      document.getElementById("root") ||
-      document.querySelector("[data-reactroot]") ||
-      document.querySelector("#__next") ||
-      document.body;
+    // Use documentElement to capture everything visible (including modals/overlays)
+    captureRootRef.current = document.documentElement;
   }, []);
 
   // Handle page unload to save recording
@@ -153,12 +150,8 @@ export function useRecorder(): RecorderAPI {
         payload: { key: "capturing", value: true },
       });
 
-      // Find the root element to capture - use React root or fallback to body
-      const captureRoot =
-        document.getElementById("root") ||
-        document.querySelector("[data-reactroot]") ||
-        document.querySelector("#__next") ||
-        document.body;
+      // Capture the entire visible viewport (includes modals, overlays, etc.)
+      const captureRoot = document.documentElement;
 
       console.log("Capture root element:", captureRoot.tagName, {
         id: captureRoot.id,
@@ -334,12 +327,8 @@ export function useRecorder(): RecorderAPI {
           y: event.clientY,
         });
 
-        // Find the root element to capture
-        const captureRoot =
-          document.getElementById("root") ||
-          document.querySelector("[data-reactroot]") ||
-          document.querySelector("#__next") ||
-          document.body;
+        // Capture the entire visible viewport (includes modals, overlays, etc.)
+        const captureRoot = document.documentElement;
 
         const captureOptions = {
           root: captureRoot,

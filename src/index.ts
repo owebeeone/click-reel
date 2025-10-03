@@ -14,6 +14,14 @@ export { ClickReelRecorder } from "./react/ClickReelRecorder";
 export { ClickReelInventory } from "./react/ClickReelInventory";
 export { ClickReelSettings } from "./react/ClickReelSettings";
 
+// Export inventory components
+export { InventoryList } from "./react/components/InventoryList";
+export { InventoryItem } from "./react/components/InventoryItem";
+export { ReelPlayer } from "./react/components/ReelPlayer";
+export { DeleteConfirmDialog } from "./react/components/DeleteConfirmDialog";
+export { EmptyState } from "./react/components/EmptyState";
+export { MarkerDebugDialog } from "./react/components/MarkerDebugDialog";
+
 // Export React hooks
 export { useRecorder } from "./react/hooks/useRecorder";
 export { useStorage } from "./react/hooks/useStorage";
