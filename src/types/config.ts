@@ -135,6 +135,12 @@ export interface ObfuscationConfig {
  * Storage quota information
  */
 export interface StorageInfo {
+  /** Number of reels stored */
+  reelsCount: number;
+  /** Number of frames stored */
+  framesCount: number;
+  /** Estimated storage size in bytes */
+  estimatedSize: number;
   /** Total quota in bytes */
   quota: number;
   /** Used space in bytes */

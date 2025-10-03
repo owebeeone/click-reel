@@ -45,3 +45,9 @@ export {
   exportMetadataJSON,
   generateFilename,
 } from "./core/metadata";
+
+export {
+  StorageService,
+  getStorageService,
+  resetStorageService,
+} from "./core/storage";

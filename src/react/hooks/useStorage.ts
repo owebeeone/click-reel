@@ -17,6 +17,9 @@ export function useStorage(): StorageAPI {
       console.log("Delete reel (placeholder)");
     },
     getStorageInfo: async () => ({
+      reelsCount: 0,
+      framesCount: 0,
+      estimatedSize: 0,
       quota: 0,
       usage: 0,
       available: 0,
