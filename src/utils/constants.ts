@@ -2,17 +2,22 @@
  * Default constants and configuration values
  */
 
-import type { UserPreferences, MarkerStyle, GIFOptions, APNGOptions } from '../types';
+import type {
+  UserPreferences,
+  MarkerStyle,
+  GIFOptions,
+  APNGOptions,
+} from "../types";
 
 /**
  * Default marker style configuration
  */
 export const DEFAULT_MARKER_STYLE: Required<MarkerStyle> = {
   size: 50,
-  color: '#ff0000',
+  color: "#ff0000",
   opacity: 0.5,
   borderWidth: 2,
-  borderColor: '#ffffff',
+  borderColor: "#ffffff",
   animationDuration: 300,
 };
 
@@ -22,7 +27,7 @@ export const DEFAULT_MARKER_STYLE: Required<MarkerStyle> = {
 export const DEFAULT_GIF_OPTIONS: Required<GIFOptions> = {
   fps: 10,
   quality: 80,
-  dithering: 'floyd-steinberg',
+  dithering: "floyd-steinberg",
   maxColors: 256,
   loop: true,
 };
@@ -40,8 +45,8 @@ export const DEFAULT_APNG_OPTIONS: Required<APNGOptions> = {
  */
 export const DEFAULT_PREFERENCES: UserPreferences = {
   markerSize: 50,
-  markerColor: '#ff0000',
-  exportFormat: 'gif',
+  markerColor: "#ff0000",
+  exportFormat: "gif",
   postClickDelay: 500,
   postClickInterval: 100,
   maxCaptureDuration: 4000,
@@ -50,11 +55,11 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   maxHeight: 1080,
   obfuscationEnabled: false,
   keyboardShortcuts: {
-    toggleRecorder: 'ctrl+shift+r',
-    toggleObfuscation: 'ctrl+shift+o',
-    armCapture: 'ctrl+shift+a',
-    stopRecording: 'ctrl+shift+s',
-    addFrame: 'ctrl+shift+f',
+    toggleRecorder: "ctrl+shift+r",
+    toggleObfuscation: "ctrl+shift+o",
+    armCapture: "ctrl+shift+a",
+    stopRecording: "ctrl+shift+s",
+    addFrame: "ctrl+shift+f",
   },
 };
 
@@ -71,7 +76,7 @@ export const MAX_FRAME_COUNT = 100;
 /**
  * IndexedDB database name
  */
-export const DB_NAME = 'click-reel-storage';
+export const DB_NAME = "click-reel-storage";
 
 /**
  * IndexedDB version
@@ -82,24 +87,24 @@ export const DB_VERSION = 1;
  * Object store names
  */
 export const STORE_NAMES = {
-  REELS: 'reels',
-  FRAMES: 'frames',
+  REELS: "reels",
+  FRAMES: "frames",
 } as const;
 
 /**
  * Local storage keys
  */
 export const STORAGE_KEYS = {
-  PREFERENCES: 'click-reel-preferences',
-  UI_STATE: 'click-reel-ui-state',
+  PREFERENCES: "click-reel-preferences",
+  UI_STATE: "click-reel-ui-state",
 } as const;
 
 /**
  * Data attribute for excluding elements from capture
  */
-export const EXCLUDE_ATTRIBUTE = 'data-screenshot-exclude';
+export const EXCLUDE_ATTRIBUTE = "data-screenshot-exclude";
 
 /**
  * Data attribute for preserving elements during obfuscation
  */
-export const PRESERVE_ATTRIBUTE = 'data-screenshot-preserve';
+export const PRESERVE_ATTRIBUTE = "data-screenshot-preserve";

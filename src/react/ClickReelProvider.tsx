@@ -3,7 +3,7 @@
  * @placeholder - Will be fully implemented in Phase 6
  */
 
-import { type ReactNode } from 'react';
+import { type ReactNode } from "react";
 
 export interface ClickReelProviderProps {
   children: ReactNode;

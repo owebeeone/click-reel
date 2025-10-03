@@ -3,7 +3,7 @@
  * @placeholder - Will be fully implemented in Phase 6
  */
 
-import type { KeyboardShortcuts } from '../../types';
+import type { KeyboardShortcuts } from "../../types";
 
 /**
  * Hook for managing keyboard shortcuts

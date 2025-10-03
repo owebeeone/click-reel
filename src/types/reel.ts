@@ -39,7 +39,7 @@ export interface FrameMetadata {
   /** Scroll position at capture time */
   scrollPosition: { x: number; y: number };
   /** Whether this is a pre-click or post-click frame */
-  captureType: 'pre-click' | 'post-click';
+  captureType: "pre-click" | "post-click";
   /** Optional sanitized HTML snapshot */
   htmlSnapshot?: string;
 }
@@ -86,7 +86,7 @@ export interface ReelSummary {
 export interface ReelSettings {
   markerSize: number;
   markerColor: string;
-  exportFormat: 'gif' | 'apng';
+  exportFormat: "gif" | "apng";
   postClickDelay: number;
   postClickInterval: number;
   maxCaptureDuration: number;

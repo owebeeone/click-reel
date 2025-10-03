@@ -53,7 +53,7 @@ export interface GIFOptions {
   /** Quality (1-100) */
   quality?: number;
   /** Dithering algorithm */
-  dithering?: 'none' | 'ordered' | 'floyd-steinberg';
+  dithering?: "none" | "ordered" | "floyd-steinberg";
   /** Maximum colors in palette */
   maxColors?: number;
   /** Whether to loop */
@@ -79,7 +79,7 @@ export interface UserPreferences {
   /** Preferred marker color */
   markerColor: string;
   /** Preferred export format */
-  exportFormat: 'gif' | 'apng';
+  exportFormat: "gif" | "apng";
   /** Post-click delay in ms */
   postClickDelay: number;
   /** Post-click interval in ms */

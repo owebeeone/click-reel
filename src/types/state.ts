@@ -2,13 +2,18 @@
  * State management types for React components
  */
 
-import type { Reel, ReelSummary } from './reel';
-import type { UserPreferences } from './config';
+import type { Reel, ReelSummary } from "./reel";
+import type { UserPreferences } from "./config";
 
 /**
  * Possible states of the recorder
  */
-export type RecorderState = 'idle' | 'armed' | 'recording' | 'processing' | 'exporting';
+export type RecorderState =
+  | "idle"
+  | "armed"
+  | "recording"
+  | "processing"
+  | "exporting";
 
 /**
  * The main application state
@@ -72,34 +77,34 @@ export interface UIState {
  */
 export enum ActionType {
   // Recorder actions
-  START_RECORDING = 'START_RECORDING',
-  ARM = 'ARM',
-  DISARM = 'DISARM',
-  ADD_FRAME = 'ADD_FRAME',
-  COMPLETE_RECORDING = 'COMPLETE_RECORDING',
-  STOP_RECORDING = 'STOP_RECORDING',
+  START_RECORDING = "START_RECORDING",
+  ARM = "ARM",
+  DISARM = "DISARM",
+  ADD_FRAME = "ADD_FRAME",
+  COMPLETE_RECORDING = "COMPLETE_RECORDING",
+  STOP_RECORDING = "STOP_RECORDING",
 
   // Inventory actions
-  LOAD_INVENTORY = 'LOAD_INVENTORY',
-  SELECT_REEL = 'SELECT_REEL',
-  DELETE_REEL = 'DELETE_REEL',
+  LOAD_INVENTORY = "LOAD_INVENTORY",
+  SELECT_REEL = "SELECT_REEL",
+  DELETE_REEL = "DELETE_REEL",
 
   // Preferences actions
-  UPDATE_PREFERENCES = 'UPDATE_PREFERENCES',
+  UPDATE_PREFERENCES = "UPDATE_PREFERENCES",
 
   // Error actions
-  SET_ERROR = 'SET_ERROR',
-  CLEAR_ERROR = 'CLEAR_ERROR',
+  SET_ERROR = "SET_ERROR",
+  CLEAR_ERROR = "CLEAR_ERROR",
 
   // UI actions
-  TOGGLE_RECORDER_UI = 'TOGGLE_RECORDER_UI',
-  TOGGLE_INVENTORY = 'TOGGLE_INVENTORY',
-  TOGGLE_SETTINGS = 'TOGGLE_SETTINGS',
-  TOGGLE_OBFUSCATION = 'TOGGLE_OBFUSCATION',
-  SET_RECORDER_POSITION = 'SET_RECORDER_POSITION',
+  TOGGLE_RECORDER_UI = "TOGGLE_RECORDER_UI",
+  TOGGLE_INVENTORY = "TOGGLE_INVENTORY",
+  TOGGLE_SETTINGS = "TOGGLE_SETTINGS",
+  TOGGLE_OBFUSCATION = "TOGGLE_OBFUSCATION",
+  SET_RECORDER_POSITION = "SET_RECORDER_POSITION",
 
   // Loading actions
-  SET_LOADING = 'SET_LOADING',
+  SET_LOADING = "SET_LOADING",
 }
 
 /**
@@ -122,10 +127,13 @@ export type Action =
   | { type: ActionType.TOGGLE_INVENTORY }
   | { type: ActionType.TOGGLE_SETTINGS }
   | { type: ActionType.TOGGLE_OBFUSCATION }
-  | { type: ActionType.SET_RECORDER_POSITION; payload: { x: number; y: number } }
+  | {
+      type: ActionType.SET_RECORDER_POSITION;
+      payload: { x: number; y: number };
+    }
   | {
       type: ActionType.SET_LOADING;
-      payload: { key: keyof ClickReelState['loading']; value: boolean };
+      payload: { key: keyof ClickReelState["loading"]; value: boolean };
     };
 
 /**
@@ -147,9 +155,9 @@ export interface RecorderAPI {
   /** Stop and save current recording */
   stopRecording: () => Promise<void>;
   /** Export current reel */
-  exportReel: (format: 'gif' | 'apng' | 'zip') => Promise<void>;
+  exportReel: (format: "gif" | "apng" | "zip") => Promise<void>;
   /** Loading states */
-  loading: ClickReelState['loading'];
+  loading: ClickReelState["loading"];
   /** Error state */
   error: ErrorState | null;
   /** Clear error */
@@ -169,7 +177,7 @@ export interface StorageAPI {
   /** Delete a reel from storage */
   deleteReel: (id: string) => Promise<void>;
   /** Get storage quota information */
-  getStorageInfo: () => Promise<import('./config').StorageInfo>;
+  getStorageInfo: () => Promise<import("./config").StorageInfo>;
   /** Loading state */
   loading: boolean;
   /** Error state */

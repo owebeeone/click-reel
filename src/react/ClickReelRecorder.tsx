@@ -15,14 +15,14 @@ export function ClickReelRecorder(_props: ClickReelRecorderProps) {
   return (
     <div
       style={{
-        position: 'fixed',
+        position: "fixed",
         bottom: 20,
         right: 20,
         padding: 16,
-        background: '#1a1a1a',
-        color: '#fff',
+        background: "#1a1a1a",
+        color: "#fff",
         borderRadius: 8,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
       }}
     >
       <p>ClickReel Recorder (Placeholder)</p>

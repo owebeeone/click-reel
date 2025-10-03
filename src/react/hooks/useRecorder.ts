@@ -3,32 +3,32 @@
  * @placeholder - Will be fully implemented in Phase 6
  */
 
-import type { RecorderAPI } from '../../types';
+import type { RecorderAPI } from "../../types";
 
 /**
  * Hook for managing recorder state and operations
  */
 export function useRecorder(): RecorderAPI {
   return {
-    state: 'idle',
+    state: "idle",
     currentReel: null,
     startRecording: async () => {
-      console.log('Start recording (placeholder)');
+      console.log("Start recording (placeholder)");
     },
     arm: () => {
-      console.log('Arm (placeholder)');
+      console.log("Arm (placeholder)");
     },
     disarm: () => {
-      console.log('Disarm (placeholder)');
+      console.log("Disarm (placeholder)");
     },
     addFrame: async () => {
-      console.log('Add frame (placeholder)');
+      console.log("Add frame (placeholder)");
     },
     stopRecording: async () => {
-      console.log('Stop recording (placeholder)');
+      console.log("Stop recording (placeholder)");
     },
     exportReel: async () => {
-      console.log('Export reel (placeholder)');
+      console.log("Export reel (placeholder)");
     },
     loading: {
       capturing: false,
@@ -38,7 +38,7 @@ export function useRecorder(): RecorderAPI {
     },
     error: null,
     clearError: () => {
-      console.log('Clear error (placeholder)');
+      console.log("Clear error (placeholder)");
     },
   };
 }
