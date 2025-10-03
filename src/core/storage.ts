@@ -153,6 +153,18 @@ export class StorageService {
 
       const frames = await this.loadFramesByReelId(id);
 
+      console.log(`Loaded reel ${id}: ${frames.length} frames`);
+      if (frames.length > 0) {
+        console.log(
+          "First frame image type:",
+          typeof frames[0].image,
+          "preview:",
+          typeof frames[0].image === "string"
+            ? frames[0].image.substring(0, 100)
+            : "Blob"
+        );
+      }
+
       return {
         id: reelData.id,
         title: reelData.title,
@@ -164,7 +176,9 @@ export class StorageService {
         metadata: reelData.metadata,
       };
     } catch (error) {
-      throw new Error(`Failed to load reel: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to load reel: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 

@@ -47,33 +47,36 @@ export async function encodeGIF(
       `Processing frame ${i + 1}/${frames.length}...`
     );
 
-    // Get image data
-    const imageData = await getImageDataFromFrame(frame);
+    try {
+      // Get image data
+      const imageData = await getImageDataFromFrame(frame);
 
-    // Calculate delay from timestamps
-    const delay =
-      i < frames.length - 1 ? frames[i + 1].timestamp - frame.timestamp : 100;
-    const delayMs = Math.max(10, Math.min(delay, 10000)); // Clamp between 10ms and 10s
+      // Calculate delay from timestamps
+      const delay =
+        i < frames.length - 1 ? frames[i + 1].timestamp - frame.timestamp : 100;
+      const delayMs = Math.max(10, Math.min(delay, 10000)); // Clamp between 10ms and 10s
 
-    // Quantize the image to get palette
-    const { colors, palette } = quantize(
-      imageData.data,
-      config.maxColors || 256,
-      {
+      // Quantize the image to get palette (returns array of RGB arrays)
+      const palette = quantize(imageData.data, config.maxColors || 256, {
         format: "rgb565",
-      }
-    );
+      });
 
-    // Apply dithering
-    const index = applyPalette(imageData.data, palette, config.dithering);
+      // Apply palette to get indexed bitmap
+      const index = applyPalette(imageData.data, palette, "rgb565");
 
-    // Write frame to GIF
-    gif.writeFrame(index, imageData.width, imageData.height, {
-      palette: colors,
-      delay: Math.round(delayMs / 10), // GIF delay is in hundredths of a second
-      transparent: false,
-      dispose: 2, // Restore to background
-    });
+      // Write frame to GIF
+      gif.writeFrame(index, imageData.width, imageData.height, {
+        palette,
+        delay: Math.round(delayMs / 10), // GIF delay is in hundredths of a second
+        transparent: false,
+        dispose: 2, // Restore to background
+      });
+    } catch (error) {
+      console.error(`Failed to process frame ${i}:`, error);
+      throw new Error(
+        `Failed to encode frame ${i + 1}/${frames.length}: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
   }
 
   onProgress?.(frames.length, frames.length, "Finalizing GIF...");
@@ -252,12 +255,34 @@ async function blobToDataURL(blob: Blob): Promise<string> {
  * Helper to get ImageData from a Frame
  */
 async function getImageDataFromFrame(frame: Frame): Promise<ImageData> {
-  const dataUrl =
-    typeof frame.image === "string"
-      ? frame.image
-      : await blobToDataURL(frame.image);
+  try {
+    const dataUrl =
+      typeof frame.image === "string"
+        ? frame.image
+        : await blobToDataURL(frame.image);
 
-  return extractImageData(dataUrl);
+    if (!dataUrl || !dataUrl.startsWith("data:image/")) {
+      throw new Error(`Invalid image data URL for frame ${frame.id}`);
+    }
+
+    const imageData = await extractImageData(dataUrl);
+
+    if (!imageData || !imageData.data || imageData.data.length === 0) {
+      throw new Error(
+        `Failed to extract ImageData from frame ${frame.id}: ImageData is invalid`
+      );
+    }
+
+    return imageData;
+  } catch (error) {
+    console.error(`Error processing frame ${frame.id}:`, error);
+    console.error("Frame image type:", typeof frame.image);
+    console.error(
+      "Frame image preview:",
+      typeof frame.image === "string" ? frame.image.substring(0, 100) : "Blob"
+    );
+    throw error;
+  }
 }
 
 /**

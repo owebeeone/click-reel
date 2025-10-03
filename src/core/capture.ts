@@ -12,9 +12,9 @@ import {
   getViewportSize,
   getScrollPosition,
   cloneAndCleanDOM,
-  injectMarker,
-} from '../utils/dom-utils';
-import { DEFAULT_MARKER_STYLE } from '../utils/constants';
+  createMarkerElement,
+} from "../utils/dom-utils";
+import { DEFAULT_MARKER_STYLE } from "../utils/constants";
 
 /**
  * Captures a single frame from a pointer event
@@ -25,7 +25,7 @@ export async function captureFrame(
   options: CaptureOptions,
   reelId: string,
   order: number,
-  captureType: 'pre-click' | 'post-click' = 'pre-click'
+  captureType: "pre-click" | "post-click" = "pre-click"
 ): Promise<Frame> {
   const frameId = nanoid();
   const timestamp = Date.now();
@@ -35,28 +35,13 @@ export async function captureFrame(
   const relativeCoords = getRelativeCoords(pointerEvent, root);
 
   // Get target element and generate path
-  const target = pointerEvent.target as HTMLElement;
+  // For synthetic events (manual capture), target may be null - use root instead
+  const target = (pointerEvent.target as HTMLElement) || root;
   const elementPath = getElementPath(target, root);
 
   // Get viewport info
   const viewportSize = getViewportSize();
   const scrollPosition = getScrollPosition();
-
-  // Clone and clean the DOM
-  const cloned = cloneAndCleanDOM(root, options.excludeSelector);
-
-  // Inject marker for pre-click frames
-  let domWithMarker = cloned;
-  if (captureType === 'pre-click') {
-    const markerStyle: MarkerStyle = {
-      ...DEFAULT_MARKER_STYLE,
-      ...options.markerStyle,
-    };
-    domWithMarker = injectMarker(cloned, relativeCoords, pointerEvent.button, markerStyle);
-  }
-
-  // Capture the image
-  const dataUrl = await captureToDataURL(domWithMarker, options);
 
   // Build metadata
   const metadata: FrameMetadata = {
@@ -69,8 +54,63 @@ export async function captureFrame(
     captureType,
   };
 
+  // For image capture, use the ORIGINAL element (html-to-image needs it in the DOM)
+  // For marker injection, we temporarily modify the DOM
+  let markerElement: HTMLElement | null = null;
+
+  if (captureType === "pre-click") {
+    const markerStyle: MarkerStyle = {
+      ...DEFAULT_MARKER_STYLE,
+      ...options.markerStyle,
+    };
+    // Create and inject marker directly into the real DOM temporarily
+    markerElement = createMarkerElement(
+      relativeCoords,
+      pointerEvent.button,
+      markerStyle
+    );
+    root.appendChild(markerElement);
+  }
+
+  try {
+    // Capture the image from the real DOM element
+    const dataUrl = await captureToDataURL(root, options);
+
+    // Clean up marker
+    if (markerElement) {
+      root.removeChild(markerElement);
+    }
+
+    return await finishFrame(
+      frameId,
+      reelId,
+      timestamp,
+      order,
+      dataUrl,
+      metadata,
+      options
+    );
+  } catch (error) {
+    // Clean up marker on error
+    if (markerElement && root.contains(markerElement)) {
+      root.removeChild(markerElement);
+    }
+    throw error;
+  }
+}
+
+async function finishFrame(
+  frameId: string,
+  reelId: string,
+  timestamp: number,
+  order: number,
+  dataUrl: string,
+  metadata: FrameMetadata,
+  options: CaptureOptions
+): Promise<Frame> {
   // Optionally collect HTML snapshot
   if (options.collectHtml) {
+    const root = document.getElementById("root") || document.body;
     metadata.htmlSnapshot = sanitizeHTML(root.outerHTML);
   }
 
@@ -90,26 +130,70 @@ export async function captureFrame(
 /**
  * Captures DOM element to a data URL using html-to-image
  */
-async function captureToDataURL(element: HTMLElement, options: CaptureOptions): Promise<string> {
+async function captureToDataURL(
+  element: HTMLElement,
+  options: CaptureOptions
+): Promise<string> {
   try {
-    const dataUrl = await htmlToImage.toPng(element, {
+    console.log("Capturing element:", element.tagName, {
+      offsetWidth: element.offsetWidth,
+      offsetHeight: element.offsetHeight,
+      scrollWidth: element.scrollWidth,
+      scrollHeight: element.scrollHeight,
+    });
+
+    const captureOptions: Record<string, unknown> = {
       quality: 0.95,
       pixelRatio: options.scale || 2,
-      width: options.maxWidth,
-      height: options.maxHeight,
       cacheBust: true,
       style: {
         // Ensure the element is visible during capture
-        visibility: 'visible',
-        opacity: '1',
+        visibility: "visible",
+        opacity: "1",
       },
-    });
+    };
+
+    // Only set width/height if they are explicitly defined and > 0
+    if (options.maxWidth && options.maxWidth > 0) {
+      captureOptions.width = options.maxWidth;
+    }
+    if (options.maxHeight && options.maxHeight > 0) {
+      captureOptions.height = options.maxHeight;
+    }
+
+    console.log("Capture options:", captureOptions);
+
+    const dataUrl = await htmlToImage.toPng(element, captureOptions);
+
+    console.log(
+      "Captured data URL length:",
+      dataUrl.length,
+      "preview:",
+      dataUrl.substring(0, 100)
+    );
+
+    // Validate the captured image is not a 1x1 placeholder
+    // Real 1x1 PNGs are ~150 bytes, but allow mock data for tests
+    const is1x1Placeholder =
+      dataUrl.length < 200 && !dataUrl.includes("mockdata");
+
+    if (is1x1Placeholder) {
+      console.warn(
+        "Captured image appears to be a 1x1 placeholder - element may not be visible or has no dimensions"
+      );
+      console.warn("Element dimensions:", {
+        offsetWidth: element.offsetWidth,
+        offsetHeight: element.offsetHeight,
+      });
+      // Don't throw in production - let it through with a warning
+      // The encoder will catch actual encoding issues
+    }
 
     return dataUrl;
   } catch (error) {
-    console.error('Error capturing frame:', error);
+    console.error("Error capturing frame:", error);
     throw new Error(
-      `Failed to capture screenshot: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Failed to capture screenshot: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   }
 }

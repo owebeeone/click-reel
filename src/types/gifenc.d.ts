@@ -13,7 +13,7 @@ declare module "gifenc" {
   }
 
   export interface WriteFrameOptions {
-    palette: Uint8Array;
+    palette: number[][];
     delay?: number;
     transparent?: boolean;
     dispose?: number;
@@ -36,11 +36,11 @@ declare module "gifenc" {
     data: Uint8ClampedArray,
     maxColors: number,
     options?: QuantizeOptions
-  ): QuantizeResult;
+  ): number[][];
 
   export function applyPalette(
     data: Uint8ClampedArray,
-    palette: Uint8Array,
-    dithering?: "none" | "ordered" | "floyd-steinberg"
+    palette: number[][],
+    format?: string
   ): Uint8Array;
 }

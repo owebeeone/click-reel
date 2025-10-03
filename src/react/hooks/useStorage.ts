@@ -1,31 +1,143 @@
 /**
  * Storage operations hook
- * @placeholder - Will be fully implemented in Phase 6
  */
 
-import type { StorageAPI } from "../../types";
+import { useState, useCallback } from "react";
+import { useClickReelContext } from "../context/ClickReelContext";
+import { ActionType, type StorageAPI, type Reel } from "../../types";
+import { getStorageService } from "../../core/storage";
 
 /**
  * Hook for IndexedDB storage operations
  */
 export function useStorage(): StorageAPI {
-  return {
-    loadInventory: async () => [],
-    loadReel: async () => null,
-    saveReel: async () => "placeholder-id",
-    deleteReel: async () => {
-      console.log("Delete reel (placeholder)");
+  const { dispatch } = useClickReelContext();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<StorageAPI["error"]>(null);
+
+  const loadInventory = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const storage = getStorageService();
+      await storage.init();
+      const inventory = await storage.loadAllReels();
+      dispatch({ type: ActionType.LOAD_INVENTORY, payload: inventory });
+      return inventory;
+    } catch (err) {
+      const errorState = {
+        message: "Failed to load inventory",
+        timestamp: Date.now(),
+        details: err,
+      };
+      setError(errorState);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [dispatch]);
+
+  const loadReel = useCallback(async (id: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const storage = getStorageService();
+      await storage.init();
+      return await storage.loadReel(id);
+    } catch (err) {
+      const errorState = {
+        message: "Failed to load reel",
+        timestamp: Date.now(),
+        details: err,
+      };
+      setError(errorState);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const saveReel = useCallback(
+    async (reel: Reel) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const storage = getStorageService();
+        await storage.init();
+        const id = await storage.saveReel(reel);
+        // Reload inventory
+        const inventory = await storage.loadAllReels();
+        dispatch({ type: ActionType.LOAD_INVENTORY, payload: inventory });
+        return id;
+      } catch (err) {
+        const errorState = {
+          message: "Failed to save reel",
+          timestamp: Date.now(),
+          details: err,
+        };
+        setError(errorState);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
     },
-    getStorageInfo: async () => ({
-      reelsCount: 0,
-      framesCount: 0,
-      estimatedSize: 0,
-      quota: 0,
-      usage: 0,
-      available: 0,
-      percentUsed: 0,
-    }),
-    loading: false,
-    error: null,
+    [dispatch]
+  );
+
+  const deleteReel = useCallback(
+    async (id: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const storage = getStorageService();
+        await storage.init();
+        await storage.deleteReel(id);
+        dispatch({ type: ActionType.DELETE_REEL, payload: id });
+        // Reload inventory
+        const inventory = await storage.loadAllReels();
+        dispatch({ type: ActionType.LOAD_INVENTORY, payload: inventory });
+      } catch (err) {
+        const errorState = {
+          message: "Failed to delete reel",
+          timestamp: Date.now(),
+          details: err,
+        };
+        setError(errorState);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [dispatch]
+  );
+
+  const getStorageInfo = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const storage = getStorageService();
+      await storage.init();
+      return await storage.getStorageInfo();
+    } catch (err) {
+      const errorState = {
+        message: "Failed to get storage info",
+        timestamp: Date.now(),
+        details: err,
+      };
+      setError(errorState);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    loadInventory,
+    loadReel,
+    saveReel,
+    deleteReel,
+    getStorageInfo,
+    loading,
+    error,
   };
 }

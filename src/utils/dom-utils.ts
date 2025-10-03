@@ -8,9 +8,17 @@ import { EXCLUDE_ATTRIBUTE, PRESERVE_ATTRIBUTE } from './constants';
  * Generates a robust selector path to an element
  * Priority: data-testid → id → CSS path with nth-child
  */
-export function getElementPath(element: HTMLElement, root: HTMLElement): string {
+export function getElementPath(
+  element: HTMLElement | null,
+  root: HTMLElement
+): string {
+  // Handle null element (e.g., from synthetic events)
+  if (!element) {
+    return root.tagName.toLowerCase();
+  }
+
   // Check for data-testid attribute (highest priority)
-  const testId = element.getAttribute('data-testid');
+  const testId = element.getAttribute("data-testid");
   if (testId) {
     return `[data-testid="${testId}"]`;
   }
@@ -43,7 +51,7 @@ export function getElementPath(element: HTMLElement, root: HTMLElement): string 
     current = parent;
   }
 
-  return path.join(' > ') || 'unknown';
+  return path.join(" > ") || "unknown";
 }
 
 /**

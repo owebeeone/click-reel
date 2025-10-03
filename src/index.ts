@@ -14,11 +14,14 @@ export { ClickReelRecorder } from "./react/ClickReelRecorder";
 export { ClickReelInventory } from "./react/ClickReelInventory";
 export { ClickReelSettings } from "./react/ClickReelSettings";
 
-// Export React hooks (will be implemented in later phases)
+// Export React hooks
 export { useRecorder } from "./react/hooks/useRecorder";
 export { useStorage } from "./react/hooks/useStorage";
 export { useClickCapture } from "./react/hooks/useClickCapture";
 export { useKeyboardShortcuts } from "./react/hooks/useKeyboardShortcuts";
+
+// Export context
+export { useClickReelContext } from "./react/context/ClickReelContext";
 
 // Export constants
 export * from "./utils/constants";

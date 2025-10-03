@@ -155,7 +155,10 @@ export interface RecorderAPI {
   /** Stop and save current recording */
   stopRecording: () => Promise<void>;
   /** Export current reel */
-  exportReel: (format: "gif" | "apng" | "zip") => Promise<void>;
+  exportReel: (
+    reelId: string,
+    format?: "gif" | "apng" | "zip"
+  ) => Promise<void>;
   /** Loading states */
   loading: ClickReelState["loading"];
   /** Error state */
