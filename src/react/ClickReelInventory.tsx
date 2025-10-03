@@ -160,6 +160,24 @@ export function ClickReelInventory({
     }
   };
 
+  const handleUpdateReelTitle = async (reelId: string, newTitle: string) => {
+    if (!storage) return;
+
+    try {
+      await storage.updateReel(reelId, { title: newTitle });
+      // Update local state
+      setReels((prev) =>
+        prev.map((r) => (r.id === reelId ? { ...r, title: newTitle } : r))
+      );
+      console.log(`✅ Updated reel title: "${newTitle}"`);
+    } catch (error) {
+      console.error("❌ Failed to update reel title:", error);
+      alert(
+        `Failed to update title: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
+  };
+
   const handleDeleteReel = async () => {
     if (!storage || !deletingReel) return;
 
@@ -213,6 +231,7 @@ export function ClickReelInventory({
             const reel = reels.find((r) => r.id === reelId);
             if (reel) setDeletingReel(reel);
           }}
+          onUpdateReelTitle={handleUpdateReelTitle}
           exportingReelId={exportingReelId}
         />
       )}

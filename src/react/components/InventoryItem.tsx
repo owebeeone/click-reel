@@ -32,6 +32,8 @@ export interface InventoryItemProps {
   onEditStart?: () => void;
   /** Callback when edit mode ends */
   onEditEnd?: () => void;
+  /** Callback when title is updated */
+  onUpdateTitle?: (newTitle: string) => void;
 }
 
 /**
@@ -46,6 +48,7 @@ export function InventoryItem({
   isEditing: externalIsEditing = false,
   onEditStart,
   onEditEnd,
+  onUpdateTitle,
 }: InventoryItemProps) {
   const [editedTitle, setEditedTitle] = useState(reel.title);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -79,11 +82,9 @@ export function InventoryItem({
   };
 
   const handleSaveTitle = () => {
-    // TODO: Implement title update in storage via callback
-    // For now, just update local state - parent should handle persistence
-    if (editedTitle.trim() !== reel.title) {
-      // Update would need to be passed up via prop
-      console.log(`Title update: "${reel.title}" -> "${editedTitle}"`);
+    const trimmedTitle = editedTitle.trim();
+    if (trimmedTitle && trimmedTitle !== reel.title) {
+      onUpdateTitle?.(trimmedTitle);
     }
     onEditEnd?.();
   };

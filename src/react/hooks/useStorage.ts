@@ -131,10 +131,37 @@ export function useStorage(): StorageAPI {
     }
   }, []);
 
+  const updateReel = useCallback(
+    async (
+      id: string,
+      updates: Partial<Pick<Reel, "title" | "description">>
+    ) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const storage = getStorageService();
+        await storage.init();
+        await storage.updateReel(id, updates);
+      } catch (err) {
+        const errorState = {
+          message: "Failed to update reel",
+          timestamp: Date.now(),
+          details: err,
+        };
+        setError(errorState);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
   return {
     loadInventory,
     loadReel,
     saveReel,
+    updateReel,
     deleteReel,
     getStorageInfo,
     loading,

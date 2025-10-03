@@ -177,6 +177,11 @@ export interface StorageAPI {
   loadReel: (id: string) => Promise<Reel | null>;
   /** Save a reel to storage */
   saveReel: (reel: Reel) => Promise<string>;
+  /** Update reel metadata (title, description) */
+  updateReel: (
+    id: string,
+    updates: Partial<Pick<Reel, "title" | "description">>
+  ) => Promise<void>;
   /** Delete a reel from storage */
   deleteReel: (id: string) => Promise<void>;
   /** Get storage quota information */

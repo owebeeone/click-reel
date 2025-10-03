@@ -16,6 +16,8 @@ export interface InventoryListProps {
   onExportReel?: (reelId: string, format: "gif" | "apng" | "zip") => void;
   /** Callback when a reel should be deleted */
   onDeleteReel?: (reelId: string) => void;
+  /** Callback when a reel title is updated */
+  onUpdateReelTitle?: (reelId: string, newTitle: string) => void;
   /** Whether reels are currently loading */
   loading?: boolean;
   /** ID of reel currently being exported */
@@ -33,6 +35,7 @@ export function InventoryList({
   onViewReel,
   onExportReel,
   onDeleteReel,
+  onUpdateReelTitle,
   loading = false,
   exportingReelId = null,
 }: InventoryListProps) {
@@ -233,6 +236,9 @@ export function InventoryList({
               onView={() => onViewReel?.(reel.id)}
               onExport={(format) => onExportReel?.(reel.id, format)}
               onDelete={() => onDeleteReel?.(reel.id)}
+              onUpdateTitle={(newTitle) =>
+                onUpdateReelTitle?.(reel.id, newTitle)
+              }
               isExporting={exportingReelId === reel.id}
               isEditing={editingReelId === reel.id}
               onEditStart={() => setEditingReelId(reel.id)}
