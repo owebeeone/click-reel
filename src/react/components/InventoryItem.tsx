@@ -24,6 +24,8 @@ export interface InventoryItemProps {
   onExport?: (format: "gif" | "apng" | "zip") => void;
   /** Callback when delete is requested */
   onDelete?: () => void;
+  /** Whether export is in progress */
+  isExporting?: boolean;
 }
 
 /**
@@ -34,6 +36,7 @@ export function InventoryItem({
   onView,
   onExport,
   onDelete,
+  isExporting = false,
 }: InventoryItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(reel.title);
@@ -339,24 +342,51 @@ export function InventoryItem({
         {/* Export dropdown */}
         <div style={{ position: "relative" }} ref={exportMenuRef}>
           <button
-            onClick={() => setShowExportMenu(!showExportMenu)}
+            onClick={() => !isExporting && setShowExportMenu(!showExportMenu)}
+            disabled={isExporting}
             style={{
               padding: "8px 12px",
-              background: "#f1f5f9",
-              color: "#475569",
+              background: isExporting ? "#e2e8f0" : "#f1f5f9",
+              color: isExporting ? "#94a3b8" : "#475569",
               border: "none",
               borderRadius: "6px",
-              cursor: "pointer",
+              cursor: isExporting ? "not-allowed" : "pointer",
               display: "flex",
               alignItems: "center",
               gap: "6px",
               fontSize: "14px",
               fontWeight: 500,
+              opacity: isExporting ? 0.6 : 1,
             }}
-            title="Export reel"
+            title={isExporting ? "Export in progress..." : "Export reel"}
           >
-            <Download size={16} />
-            Export
+            {isExporting ? (
+              <>
+                <div
+                  style={{
+                    width: "16px",
+                    height: "16px",
+                    border: "2px solid #94a3b8",
+                    borderTopColor: "transparent",
+                    borderRadius: "50%",
+                    animation: "spin 1s linear infinite",
+                  }}
+                />
+                <style>
+                  {`
+                    @keyframes spin {
+                      to { transform: rotate(360deg); }
+                    }
+                  `}
+                </style>
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Download size={16} />
+                Export
+              </>
+            )}
           </button>
 
           {showExportMenu && (

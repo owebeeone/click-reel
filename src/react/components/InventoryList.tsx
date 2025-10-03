@@ -18,6 +18,8 @@ export interface InventoryListProps {
   onDeleteReel?: (reelId: string) => void;
   /** Whether reels are currently loading */
   loading?: boolean;
+  /** ID of reel currently being exported */
+  exportingReelId?: string | null;
 }
 
 type SortField = "date" | "title" | "frames";
@@ -32,6 +34,7 @@ export function InventoryList({
   onExportReel,
   onDeleteReel,
   loading = false,
+  exportingReelId = null,
 }: InventoryListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<SortField>("date");
@@ -229,6 +232,7 @@ export function InventoryList({
               onView={() => onViewReel?.(reel.id)}
               onExport={(format) => onExportReel?.(reel.id, format)}
               onDelete={() => onDeleteReel?.(reel.id)}
+              isExporting={exportingReelId === reel.id}
             />
           ))}
         </div>

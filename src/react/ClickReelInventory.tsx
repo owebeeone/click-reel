@@ -62,7 +62,7 @@ export function ClickReelInventory({
   );
   const [viewingReelTitle, setViewingReelTitle] = useState("");
   const [deletingReel, setDeletingReel] = useState<ReelSummary | null>(null);
-  const [exporting, setExporting] = useState(false);
+  const [exportingReelId, setExportingReelId] = useState<string | null>(null);
 
   // Load reels on mount
   useEffect(() => {
@@ -132,23 +132,31 @@ export function ClickReelInventory({
     reelId: string,
     format: "gif" | "apng" | "zip"
   ) => {
-    if (!storage || exporting) return;
+    if (!storage || exportingReelId) return;
 
     try {
-      setExporting(true);
+      setExportingReelId(reelId);
       const reel = await storage.loadReel(reelId);
-      if (!reel) return;
+      if (!reel) {
+        throw new Error("Reel not found");
+      }
 
       await exportReel(reel, {
         format,
         filename: reel.title,
+        onProgress: (progress) => {
+          console.log(`Export progress: ${Math.round(progress * 100)}%`);
+        },
       });
 
-      console.log(`Exported ${reel.title} as ${format.toUpperCase()}`);
+      console.log(`✅ Exported ${reel.title} as ${format.toUpperCase()}`);
     } catch (error) {
-      console.error("Failed to export reel:", error);
+      console.error("❌ Failed to export reel:", error);
+      alert(
+        `Export failed: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     } finally {
-      setExporting(false);
+      setExportingReelId(null);
     }
   };
 
@@ -205,6 +213,7 @@ export function ClickReelInventory({
             const reel = reels.find((r) => r.id === reelId);
             if (reel) setDeletingReel(reel);
           }}
+          exportingReelId={exportingReelId}
         />
       )}
 
@@ -233,24 +242,60 @@ export function ClickReelInventory({
         />
       )}
 
-      {/* Export indicator */}
-      {exporting && (
+      {/* Export modal */}
+      {exportingReelId && (
         <div
           style={{
             position: "fixed",
-            bottom: "2rem",
-            right: "2rem",
-            padding: "1rem 1.5rem",
-            background: "#3b82f6",
-            color: "white",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            background: "white",
+            padding: "2rem",
             borderRadius: "8px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-            fontSize: "14px",
-            fontWeight: 500,
-            zIndex: 999,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            zIndex: 10000,
           }}
         >
-          Exporting...
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "1rem",
+            }}
+          >
+            <div
+              style={{
+                width: "40px",
+                height: "40px",
+                border: "4px solid #e2e8f0",
+                borderTopColor: "#3b82f6",
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite",
+              }}
+            />
+            <style>
+              {`
+                @keyframes spin {
+                  to { transform: rotate(360deg); }
+                }
+              `}
+            </style>
+            <p
+              style={{
+                margin: 0,
+                fontSize: "16px",
+                color: "#1e293b",
+                fontWeight: 600,
+              }}
+            >
+              Exporting reel...
+            </p>
+            <p style={{ margin: 0, fontSize: "14px", color: "#64748b" }}>
+              Please wait while we prepare your download
+            </p>
+          </div>
         </div>
       )}
     </div>
