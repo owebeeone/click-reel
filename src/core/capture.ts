@@ -54,16 +54,13 @@ export async function captureFrame(
     captureType,
   };
 
-  // For image capture, use the ORIGINAL element (html-to-image needs it in the DOM)
-  // For marker injection, we temporarily modify the DOM
+  // Add marker temporarily if needed
   let markerElement: HTMLElement | null = null;
-
   if (captureType === "pre-click") {
     const markerStyle: MarkerStyle = {
       ...DEFAULT_MARKER_STYLE,
       ...options.markerStyle,
     };
-    // Create and inject marker directly into the real DOM temporarily
     markerElement = createMarkerElement(
       relativeCoords,
       pointerEvent.button,
@@ -73,11 +70,11 @@ export async function captureFrame(
   }
 
   try {
-    // Capture the image from the real DOM element
+    // Capture the image (captureToDataURL handles hiding excluded elements)
     const dataUrl = await captureToDataURL(root, options);
 
     // Clean up marker
-    if (markerElement) {
+    if (markerElement && root.contains(markerElement)) {
       root.removeChild(markerElement);
     }
 
@@ -134,6 +131,10 @@ async function captureToDataURL(
   element: HTMLElement,
   options: CaptureOptions
 ): Promise<string> {
+  // Temporarily hide excluded elements during capture
+  const excludedElements: Array<{ el: HTMLElement; originalDisplay: string }> =
+    [];
+
   try {
     console.log("Capturing element:", element.tagName, {
       offsetWidth: element.offsetWidth,
@@ -142,14 +143,35 @@ async function captureToDataURL(
       scrollHeight: element.scrollHeight,
     });
 
+    // Find and hide all excluded elements using visibility (preserves layout)
+    const excludedNodeList = element.querySelectorAll(
+      "[data-screenshot-exclude]"
+    );
+    excludedNodeList.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      excludedElements.push({
+        el: htmlEl,
+        originalDisplay: htmlEl.style.visibility,
+      });
+      htmlEl.style.visibility = "hidden";
+    });
+
+    // Force a reflow to ensure visibility changes are applied
+    if (excludedNodeList.length > 0) {
+      void element.offsetHeight; // Force reflow
+      // Add a tiny delay to ensure DOM update
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
     const captureOptions: Record<string, unknown> = {
       quality: 0.95,
       pixelRatio: options.scale || 2,
       cacheBust: true,
-      style: {
-        // Ensure the element is visible during capture
-        visibility: "visible",
-        opacity: "1",
+      filter: (node: HTMLElement) => {
+        // Additional filter to exclude elements with data-screenshot-exclude
+        return (
+          !node.hasAttribute || !node.hasAttribute("data-screenshot-exclude")
+        );
       },
     };
 
@@ -164,6 +186,15 @@ async function captureToDataURL(
     console.log("Capture options:", captureOptions);
 
     const dataUrl = await htmlToImage.toPng(element, captureOptions);
+
+    // Immediately restore excluded elements
+    excludedElements.forEach(({ el, originalDisplay }) => {
+      if (originalDisplay) {
+        el.style.visibility = originalDisplay;
+      } else {
+        el.style.removeProperty("visibility");
+      }
+    });
 
     console.log(
       "Captured data URL length:",
@@ -191,6 +222,15 @@ async function captureToDataURL(
 
     return dataUrl;
   } catch (error) {
+    // Restore excluded elements on error
+    excludedElements.forEach(({ el, originalDisplay }) => {
+      if (originalDisplay) {
+        el.style.visibility = originalDisplay;
+      } else {
+        el.style.removeProperty("visibility");
+      }
+    });
+
     console.error("Error capturing frame:", error);
     throw new Error(
       `Failed to capture screenshot: ${error instanceof Error ? error.message : "Unknown error"}`

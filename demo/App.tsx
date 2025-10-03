@@ -12,10 +12,15 @@ import {
   type ExportFormat,
 } from "../src";
 import { useKeyboardShortcuts } from "../src/react/hooks/useKeyboardShortcuts";
+import { DndContext } from "@dnd-kit/core";
 import toast, { Toaster } from "react-hot-toast";
 import "./index.css";
 
-function DemoContent() {
+function DemoContent({
+  recorderPosition,
+}: {
+  recorderPosition: { x: number; y: number };
+}) {
   const [exportFormat, setExportFormat] = useState<ExportFormat>("gif");
   const { state } = useClickReelContext();
   const recorder = useRecorder();
@@ -184,7 +189,10 @@ function DemoContent() {
         margin: "0 auto",
       }}
     >
-      {recorderVisible && <ClickReelRecorder />}
+      <ClickReelRecorder
+        visible={recorderVisible}
+        position={recorderPosition}
+      />
 
       <h1 style={{ color: "#333", marginBottom: "0.5rem" }}>
         Click Reel Playground 🎬
@@ -603,22 +611,7 @@ function DemoContent() {
       </section>
 
       {/* Recorder Component */}
-      <section
-        style={{
-          background: "#fff3e0",
-          padding: "1.5rem",
-          borderRadius: "8px",
-          marginBottom: "2rem",
-        }}
-      >
-        <h2 style={{ marginBottom: "1rem", fontSize: "1.5rem" }}>
-          Recorder UI Component
-        </h2>
-        <ClickReelRecorder />
-        <p style={{ marginTop: "1rem", color: "#666", fontSize: "0.9rem" }}>
-          Note: Full UI will be available in Phase 7
-        </p>
-      </section>
+      {/* Recorder Testing - Now using floating recorder at top */}
 
       {/* Interactive Test Area */}
       <section
@@ -705,9 +698,15 @@ function DemoContent() {
   );
 }
 
-function App() {
+function AppContent({
+  recorderPosition,
+  onDragEnd,
+}: {
+  recorderPosition: { x: number; y: number };
+  onDragEnd: (event: any) => void;
+}) {
   return (
-    <ClickReelProvider>
+    <DndContext onDragEnd={onDragEnd}>
       <Toaster
         position="top-right"
         toastOptions={{
@@ -730,7 +729,47 @@ function App() {
           },
         }}
       />
-      <DemoContent />
+      <DemoContent recorderPosition={recorderPosition} />
+    </DndContext>
+  );
+}
+
+function App() {
+  const [recorderPosition, setRecorderPosition] = useState(() => {
+    try {
+      const stored = localStorage.getItem("click-reel-position");
+      return stored
+        ? JSON.parse(stored)
+        : { x: window.innerWidth - 280, y: 20 };
+    } catch {
+      return { x: window.innerWidth - 280, y: 20 };
+    }
+  });
+
+  const handleDragEnd = (event: any) => {
+    if (event.active.id === "click-reel-recorder") {
+      const newPosition = {
+        x: recorderPosition.x + event.delta.x,
+        y: recorderPosition.y + event.delta.y,
+      };
+      setRecorderPosition(newPosition);
+      try {
+        localStorage.setItem(
+          "click-reel-position",
+          JSON.stringify(newPosition)
+        );
+      } catch (err) {
+        console.warn("Failed to save recorder position:", err);
+      }
+    }
+  };
+
+  return (
+    <ClickReelProvider>
+      <AppContent
+        recorderPosition={recorderPosition}
+        onDragEnd={handleDragEnd}
+      />
     </ClickReelProvider>
   );
 }
