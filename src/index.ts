@@ -40,6 +40,14 @@ export { useClickReelContext } from "./react/context/ClickReelContext";
 // Export constants
 export * from "./utils/constants";
 
+// Export obfuscation utilities
+export {
+  obfuscateDOM,
+  isObfuscationEnabled,
+  setObfuscationState,
+  DEFAULT_OBFUSCATION_CONFIG,
+} from "./utils/obfuscation";
+
 // Export core functions
 export {
   encodeGIF,

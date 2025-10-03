@@ -15,6 +15,7 @@ import {
   createMarkerElement,
 } from "../utils/dom-utils";
 import { DEFAULT_MARKER_STYLE } from "../utils/constants";
+import { obfuscateDOM, DEFAULT_OBFUSCATION_CONFIG } from "../utils/obfuscation";
 
 /**
  * Captures a single frame from a pointer event
@@ -150,6 +151,9 @@ async function captureToDataURL(
   const excludedElements: Array<{ el: HTMLElement; originalDisplay: string }> =
     [];
 
+  // Declare obfuscatedElement outside try block for cleanup in catch
+  let obfuscatedElement: HTMLElement | null = null;
+
   try {
     console.log("Capturing element:", element.tagName, {
       offsetWidth: element.offsetWidth,
@@ -196,6 +200,24 @@ async function captureToDataURL(
       void element.offsetHeight; // Force reflow
       // Add a tiny delay to ensure DOM update
       await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    // Apply obfuscation if enabled
+    let elementToCapture = element;
+
+    if (options.obfuscationEnabled) {
+      console.log("🔒 Obfuscation enabled, cloning and obfuscating DOM...");
+      obfuscatedElement = obfuscateDOM(element, DEFAULT_OBFUSCATION_CONFIG);
+
+      // Replace the element in the DOM temporarily
+      if (element.parentNode) {
+        element.parentNode.insertBefore(obfuscatedElement, element);
+        element.style.display = "none";
+        elementToCapture = obfuscatedElement;
+
+        // Force reflow
+        void obfuscatedElement.offsetHeight;
+      }
     }
 
     // Get the background color of the page/element
@@ -310,7 +332,14 @@ async function captureToDataURL(
     }
 
     console.log("🎬 Starting html-to-image capture...");
-    const dataUrl = await htmlToImage.toPng(element, captureOptions);
+    const dataUrl = await htmlToImage.toPng(elementToCapture, captureOptions);
+
+    // Clean up obfuscated element if it was created
+    if (obfuscatedElement && element.parentNode) {
+      element.parentNode.removeChild(obfuscatedElement);
+      element.style.display = "";
+      console.log("🔓 Removed obfuscated DOM clone");
+    }
 
     // Restore fixed elements immediately
     fixedElements.forEach(({ el, originalTransform }) => {
@@ -357,6 +386,16 @@ async function captureToDataURL(
 
     return dataUrl;
   } catch (error) {
+    // Clean up obfuscated element on error
+    if (obfuscatedElement && element.parentNode) {
+      try {
+        element.parentNode.removeChild(obfuscatedElement);
+        element.style.display = "";
+      } catch (cleanupError) {
+        console.error("Error cleaning up obfuscated element:", cleanupError);
+      }
+    }
+
     // Restore excluded elements on error
     excludedElements.forEach(({ el, originalDisplay }) => {
       if (originalDisplay) {

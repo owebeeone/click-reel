@@ -2,7 +2,7 @@
  * Click Reel Demo Application
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ClickReelProvider,
   ClickReelRecorder,
@@ -27,12 +27,10 @@ function DemoContent({
   recorderPosition: { x: number; y: number };
 }) {
   const [exportFormat, setExportFormat] = useState<ExportFormat>("gif");
-  const { state } = useClickReelContext();
+  const { state, dispatch } = useClickReelContext();
   const recorder = useRecorder();
   const storage = useStorage();
   const [storageInfo, setStorageInfo] = useState<string>("");
-  const [recorderVisible, setRecorderVisible] = useState(true);
-  const [obfuscationEnabled, setObfuscationEnabled] = useState(false);
   const [showDebugDialog, setShowDebugDialog] = useState(false);
   const [showCaptureDebug, setShowCaptureDebug] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -43,19 +41,25 @@ function DemoContent({
   // Set up keyboard shortcuts
   useKeyboardShortcuts({
     onToggleRecorder: () => {
-      const newVisible = !recorderVisible;
-      setRecorderVisible(newVisible);
-      console.log(`Toggling recorder visibility to: ${newVisible}`);
-      toast.success(`Recorder ${newVisible ? "shown" : "hidden"}`, {
-        duration: 2000,
-      });
+      dispatch({ type: "TOGGLE_RECORDER_UI" as any });
+      console.log(
+        `Toggling recorder visibility to: ${!state.ui.recorderVisible}`
+      );
+      toast.success(
+        `Recorder ${!state.ui.recorderVisible ? "shown" : "hidden"}`,
+        {
+          duration: 2000,
+        }
+      );
     },
     onToggleObfuscation: () => {
-      const newObfuscation = !obfuscationEnabled;
-      setObfuscationEnabled(newObfuscation);
-      toast.success(`Obfuscation ${newObfuscation ? "enabled" : "disabled"}`, {
-        duration: 2000,
-      });
+      dispatch({ type: "TOGGLE_OBFUSCATION" as any });
+      toast.success(
+        `Obfuscation ${!state.ui?.obfuscationActive ? "enabled" : "disabled"}`,
+        {
+          duration: 2000,
+        }
+      );
     },
     onToggleSettings: () => {
       const newShowSettings = !showSettings;
@@ -210,7 +214,7 @@ function DemoContent({
       }}
     >
       <ClickReelRecorder
-        visible={recorderVisible}
+        visible={state.ui.recorderVisible}
         position={recorderPosition}
       />
 
@@ -256,8 +260,8 @@ function DemoContent({
           </div>
         </div>
         <div style={{ marginTop: "0.5rem", fontSize: "12px", color: "#666" }}>
-          Status: Recorder {recorderVisible ? "Visible" : "Hidden"} |
-          Obfuscation {obfuscationEnabled ? "Enabled" : "Disabled"}
+          Status: Recorder {state.ui.recorderVisible ? "Visible" : "Hidden"} |
+          Obfuscation {state.ui?.obfuscationActive ? "Enabled" : "Disabled"}
         </div>
       </section>
 
@@ -909,24 +913,67 @@ function AppContent({
   );
 }
 
+/**
+ * Sanitize recorder position to ensure it's within the viewport
+ */
+function sanitizeRecorderPosition(pos: { x: number; y: number }): {
+  x: number;
+  y: number;
+} {
+  const recorderWidth = 280; // Approximate width of the recorder
+  const recorderHeight = 400; // Approximate height of the recorder
+  const minMargin = 20; // Minimum margin from viewport edges
+
+  // Ensure position is within viewport bounds
+  const maxX = window.innerWidth - recorderWidth - minMargin;
+  const maxY = window.innerHeight - recorderHeight - minMargin;
+
+  const sanitized = {
+    x: Math.max(minMargin, Math.min(pos.x, maxX)),
+    y: Math.max(minMargin, Math.min(pos.y, maxY)),
+  };
+
+  // Log if position was adjusted
+  if (sanitized.x !== pos.x || sanitized.y !== pos.y) {
+    console.log(
+      `📍 Recorder position sanitized: (${pos.x}, ${pos.y}) → (${sanitized.x}, ${sanitized.y})`
+    );
+  }
+
+  return sanitized;
+}
+
 function App() {
   const [recorderPosition, setRecorderPosition] = useState(() => {
     try {
       const stored = localStorage.getItem("click-reel-position");
-      return stored
+      const position = stored
         ? JSON.parse(stored)
-        : { x: window.innerWidth - 280, y: 20 };
+        : { x: window.innerWidth - 300, y: 20 };
+
+      // Sanitize the loaded position
+      return sanitizeRecorderPosition(position);
     } catch {
-      return { x: window.innerWidth - 280, y: 20 };
+      return sanitizeRecorderPosition({ x: window.innerWidth - 300, y: 20 });
     }
   });
 
+  // Handle window resize - reposition recorder if it's now off-screen
+  useEffect(() => {
+    const handleResize = () => {
+      setRecorderPosition((prev) => sanitizeRecorderPosition(prev));
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const handleDragEnd = (event: any) => {
     if (event.active.id === "click-reel-recorder") {
-      const newPosition = {
+      const newPosition = sanitizeRecorderPosition({
         x: recorderPosition.x + event.delta.x,
         y: recorderPosition.y + event.delta.y,
-      };
+      });
       setRecorderPosition(newPosition);
       try {
         localStorage.setItem(

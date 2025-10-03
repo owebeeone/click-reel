@@ -339,7 +339,7 @@ export function useRecorder(): RecorderAPI {
             size: state.currentReel.settings.markerSize,
             color: state.currentReel.settings.markerColor,
           },
-          obfuscationEnabled: state.currentReel.settings.obfuscationEnabled,
+          obfuscationEnabled: state.ui?.obfuscationActive || false,
         };
 
         // Capture the PRE-CLICK frame with the marker

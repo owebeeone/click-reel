@@ -16,6 +16,7 @@ import {
   GripVertical,
   Minimize2,
   Maximize2,
+  EyeOff,
 } from "lucide-react";
 import { useRecorder } from "./hooks/useRecorder";
 import { useClickReelContext } from "./context/ClickReelContext";
@@ -178,6 +179,30 @@ export function ClickReelRecorder({
               <span style={{ color: "#e2e8f0", fontSize: "13px" }}>
                 {getStatusText()}
               </span>
+              {state.ui?.obfuscationActive && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    padding: "2px 6px",
+                    background: "#8b5cf6",
+                    borderRadius: "4px",
+                  }}
+                  title="Obfuscation enabled - personal data will be hidden"
+                >
+                  <EyeOff size={12} color="white" />
+                  <span
+                    style={{
+                      color: "white",
+                      fontSize: "10px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    PRIVATE
+                  </span>
+                </div>
+              )}
               {recorder.currentReel && (
                 <span
                   style={{
