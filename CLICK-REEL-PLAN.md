@@ -731,7 +731,7 @@ function useKeyboardShortcuts(shortcuts: Shortcuts): void;
 
 ---
 
-### Phase 8: Inventory & Playback UI (Week 9-10)
+### Phase 8: Inventory & Playback UI (Week 9-10) ✅ COMPLETE
 
 **Goal**: Build the inventory viewer and playback components.
 
@@ -764,7 +764,8 @@ function useKeyboardShortcuts(shortcuts: Shortcuts): void;
 - [x] Add empty state UI
   - Onboarding message
   - Getting started guide
-- [ ] Write component tests
+- [x] Fixed viewer capture with scroll transforms and fixed-position element compensation
+- [ ] Write component tests (deferred to Phase 13-14)
 
 **Deliverables**:
 
@@ -774,10 +775,11 @@ function useKeyboardShortcuts(shortcuts: Shortcuts): void;
 
 **Success Criteria**:
 
-- Can view all saved reels
-- Playback is smooth and reliable
-- Can download in multiple formats
-- Delete requires confirmation
+- ✅ Can view all saved reels
+- ✅ Playback is smooth and reliable
+- ✅ Can download in multiple formats
+- ✅ Delete requires confirmation
+- ✅ Viewer captures correctly including modals
 
 ---
 

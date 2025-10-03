@@ -111,6 +111,8 @@ export interface KeyboardShortcuts {
   stopRecording: string;
   /** Add manual frame */
   addFrame: string;
+  /** Toggle settings panel */
+  toggleSettings: string;
 }
 
 /**

@@ -60,6 +60,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
     armCapture: "ctrl+shift+a",
     stopRecording: "ctrl+shift+s",
     addFrame: "ctrl+shift+f",
+    toggleSettings: "ctrl+shift+g",
   },
 };
 

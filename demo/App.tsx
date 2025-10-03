@@ -9,9 +9,11 @@ import {
   ClickReelInventory,
   MarkerDebugDialog,
   CaptureDebugDialog,
+  SettingsPanel,
   useRecorder,
   useStorage,
   useClickReelContext,
+  usePreferences,
   type ExportFormat,
 } from "../src";
 import { useKeyboardShortcuts } from "../src/react/hooks/useKeyboardShortcuts";
@@ -33,21 +35,34 @@ function DemoContent({
   const [obfuscationEnabled, setObfuscationEnabled] = useState(false);
   const [showDebugDialog, setShowDebugDialog] = useState(false);
   const [showCaptureDebug, setShowCaptureDebug] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Preferences hook
+  const { preferences, savePreferences, resetToDefaults } = usePreferences();
 
   // Set up keyboard shortcuts
   useKeyboardShortcuts({
     onToggleRecorder: () => {
       const newVisible = !recorderVisible;
       setRecorderVisible(newVisible);
+      console.log(`Toggling recorder visibility to: ${newVisible}`);
       toast.success(`Recorder ${newVisible ? "shown" : "hidden"}`, {
-        duration: 5000,
+        duration: 2000,
       });
     },
     onToggleObfuscation: () => {
       const newObfuscation = !obfuscationEnabled;
       setObfuscationEnabled(newObfuscation);
       toast.success(`Obfuscation ${newObfuscation ? "enabled" : "disabled"}`, {
-        duration: 5000,
+        duration: 2000,
+      });
+    },
+    onToggleSettings: () => {
+      const newShowSettings = !showSettings;
+      setShowSettings(newShowSettings);
+      console.log(`Toggling settings to: ${newShowSettings}`);
+      toast.success(`Settings ${newShowSettings ? "opened" : "closed"}`, {
+        duration: 2000,
       });
     },
     onStartRecording: () => {
@@ -223,6 +238,9 @@ function DemoContent({
           </div>
           <div>
             <code>Ctrl+Shift+O</code> - Toggle Obfuscation
+          </div>
+          <div>
+            <code>Ctrl+Shift+G</code> - Toggle Settings Panel
           </div>
           <div>
             <code>Ctrl+Shift+S</code> - Start Recording
@@ -657,6 +675,29 @@ function DemoContent({
         </section>
       )}
 
+      {/* Settings */}
+      <section style={{ marginTop: "2rem" }}>
+        <button
+          onClick={() => setShowSettings(true)}
+          style={{
+            padding: "12px 24px",
+            background: "#3b82f6",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontSize: "16px",
+            fontWeight: 600,
+          }}
+        >
+          ⚙️ Open Settings
+        </button>
+        <p style={{ fontSize: "14px", color: "#666", marginTop: "0.5rem" }}>
+          Configure preferences: marker appearance, capture timing, export
+          format, etc.
+        </p>
+      </section>
+
       {/* Capture Diagnostics */}
       <section style={{ marginTop: "2rem" }}>
         <button
@@ -679,6 +720,21 @@ function DemoContent({
           capture
         </p>
       </section>
+
+      {/* Settings Panel */}
+      <SettingsPanel
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        preferences={preferences}
+        onSave={(newPrefs) => {
+          savePreferences(newPrefs);
+          toast.success("Settings saved!", { duration: 3000 });
+        }}
+        onReset={() => {
+          resetToDefaults();
+          toast.success("Reset to defaults!", { duration: 3000 });
+        }}
+      />
 
       {/* Debug Dialogs */}
       <CaptureDebugDialog

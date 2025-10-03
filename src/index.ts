@@ -22,12 +22,17 @@ export { DeleteConfirmDialog } from "./react/components/DeleteConfirmDialog";
 export { EmptyState } from "./react/components/EmptyState";
 export { MarkerDebugDialog } from "./react/components/MarkerDebugDialog";
 export { CaptureDebugDialog } from "./react/components/CaptureDebugDialog";
+export { SettingsPanel } from "./react/components/SettingsPanel";
 
 // Export React hooks
 export { useRecorder } from "./react/hooks/useRecorder";
 export { useStorage } from "./react/hooks/useStorage";
 export { useClickCapture } from "./react/hooks/useClickCapture";
 export { useKeyboardShortcuts } from "./react/hooks/useKeyboardShortcuts";
+export {
+  usePreferences,
+  DEFAULT_PREFERENCES,
+} from "./react/hooks/usePreferences";
 
 // Export context
 export { useClickReelContext } from "./react/context/ClickReelContext";

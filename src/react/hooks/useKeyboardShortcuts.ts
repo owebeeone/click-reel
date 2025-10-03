@@ -12,6 +12,7 @@ export interface KeyboardShortcutHandlers {
   onStopRecording?: () => void;
   onArmCapture?: () => void;
   onAddFrame?: () => void;
+  onToggleSettings?: () => void;
 }
 
 export interface KeyboardShortcutConfig {
@@ -21,6 +22,7 @@ export interface KeyboardShortcutConfig {
   stopRecording?: string;
   armCapture?: string;
   addFrame?: string;
+  toggleSettings?: string;
 }
 
 /**
@@ -37,6 +39,7 @@ export function useKeyboardShortcuts(
     stopRecording: config?.stopRecording || "ctrl+shift+x",
     armCapture: config?.armCapture || "ctrl+shift+a",
     addFrame: config?.addFrame || "ctrl+shift+f",
+    toggleSettings: config?.toggleSettings || "ctrl+shift+g",
   };
 
   // Toggle recorder UI visibility
@@ -101,6 +104,17 @@ export function useKeyboardShortcuts(
       e.preventDefault();
       handlers.onAddFrame?.();
       console.log("Keyboard shortcut: Add frame");
+    },
+    { enableOnFormTags: false }
+  );
+
+  // Toggle settings
+  useHotkeys(
+    shortcuts.toggleSettings,
+    (e) => {
+      e.preventDefault();
+      handlers.onToggleSettings?.();
+      console.log("Keyboard shortcut: Toggle settings");
     },
     { enableOnFormTags: false }
   );
