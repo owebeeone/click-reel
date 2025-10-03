@@ -62,6 +62,10 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
     addFrame: "ctrl+shift+f",
     toggleSettings: "ctrl+shift+g",
   },
+  recorderUI: {
+    showOnStartup: true,
+    startMinimized: false,
+  },
 };
 
 /**

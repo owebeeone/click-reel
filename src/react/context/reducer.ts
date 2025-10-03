@@ -31,6 +31,10 @@ export const initialState: ClickReelState = {
       addFrame: "ctrl+shift+f",
       toggleSettings: "ctrl+shift+g",
     },
+    recorderUI: {
+      showOnStartup: true,
+      startMinimized: false,
+    },
   },
   loading: {
     capturing: false,

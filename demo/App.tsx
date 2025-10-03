@@ -36,7 +36,22 @@ function DemoContent({
   const [showSettings, setShowSettings] = useState(false);
 
   // Preferences hook
-  const { preferences, savePreferences, resetToDefaults } = usePreferences();
+  const { preferences, savePreferences, resetToDefaults, isLoaded } =
+    usePreferences();
+
+  // Apply showOnStartup preference to recorder visibility on mount
+  useEffect(() => {
+    if (
+      isLoaded &&
+      !preferences.recorderUI.showOnStartup &&
+      state.ui.recorderVisible
+    ) {
+      dispatch({ type: "TOGGLE_RECORDER_UI" as any });
+      console.log(
+        "📍 Hiding recorder on startup (showOnStartup preference is false)"
+      );
+    }
+  }, [isLoaded]); // Run when preferences are loaded
 
   // Set up keyboard shortcuts
   useKeyboardShortcuts({
@@ -216,6 +231,17 @@ function DemoContent({
       <ClickReelRecorder
         visible={state.ui.recorderVisible}
         position={recorderPosition}
+        initialCollapsed={preferences.recorderUI.startMinimized}
+        onCollapsedChange={(collapsed) => {
+          // Persist collapsed state to preferences
+          savePreferences({
+            ...preferences,
+            recorderUI: {
+              ...preferences.recorderUI,
+              startMinimized: collapsed,
+            },
+          });
+        }}
       />
 
       <h1 style={{ color: "#333", marginBottom: "0.5rem" }}>

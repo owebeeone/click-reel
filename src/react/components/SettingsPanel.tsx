@@ -620,6 +620,94 @@ export function SettingsPanel({
               Automatically blur sensitive information in captures
             </p>
           </section>
+
+          {/* Recorder UI */}
+          <section style={{ marginBottom: "2rem" }}>
+            <h3
+              style={{
+                fontSize: "1.125rem",
+                fontWeight: 600,
+                color: "#1e293b",
+                marginBottom: "1rem",
+              }}
+            >
+              Recorder UI
+            </h3>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.75rem",
+              }}
+            >
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={localPreferences.recorderUI.showOnStartup}
+                  onChange={(e) => {
+                    setLocalPreferences((prev) => ({
+                      ...prev,
+                      recorderUI: {
+                        ...prev.recorderUI,
+                        showOnStartup: e.target.checked,
+                      },
+                    }));
+                    setHasChanges(true);
+                  }}
+                  style={{ width: "20px", height: "20px" }}
+                />
+                <span style={{ fontSize: "0.875rem", color: "#475569" }}>
+                  Show recorder on startup
+                </span>
+              </label>
+
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={localPreferences.recorderUI.startMinimized}
+                  onChange={(e) => {
+                    setLocalPreferences((prev) => ({
+                      ...prev,
+                      recorderUI: {
+                        ...prev.recorderUI,
+                        startMinimized: e.target.checked,
+                      },
+                    }));
+                    setHasChanges(true);
+                  }}
+                  style={{ width: "20px", height: "20px" }}
+                />
+                <span style={{ fontSize: "0.875rem", color: "#475569" }}>
+                  Start minimized (collapsed)
+                </span>
+              </label>
+            </div>
+
+            <p
+              style={{
+                fontSize: "0.75rem",
+                color: "#64748b",
+                margin: "0.5rem 0 0 0",
+              }}
+            >
+              Control recorder visibility and initial state
+            </p>
+          </section>
         </div>
 
         {/* Footer */}

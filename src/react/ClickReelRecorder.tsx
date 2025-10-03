@@ -28,6 +28,10 @@ export interface ClickReelRecorderProps {
   position?: { x: number; y: number };
   /** Whether the recorder is visible */
   visible?: boolean;
+  /** Initial collapsed state */
+  initialCollapsed?: boolean;
+  /** Callback when collapsed state changes */
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 /**
@@ -36,10 +40,18 @@ export interface ClickReelRecorderProps {
 export function ClickReelRecorder({
   position = { x: window.innerWidth - 280, y: 20 },
   visible = true,
+  initialCollapsed = false,
+  onCollapsedChange,
 }: ClickReelRecorderProps) {
   const recorder = useRecorder();
   const { state } = useClickReelContext();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
+
+  const handleToggleCollapse = () => {
+    const newCollapsed = !isCollapsed;
+    setIsCollapsed(newCollapsed);
+    onCollapsedChange?.(newCollapsed);
+  };
 
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: "click-reel-recorder",
@@ -131,22 +143,74 @@ export function ClickReelRecorder({
               Click Reel
             </span>
           </div>
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
+          {!isCollapsed && (
+            <button
+              onClick={handleToggleCollapse}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#94a3b8",
+                cursor: "pointer",
+                padding: "4px",
+                display: "flex",
+                alignItems: "center",
+              }}
+              aria-label="Minimize"
+            >
+              <Minimize2 size={16} />
+            </button>
+          )}
+        </div>
+
+        {/* Collapsed/Minimized View - button-only mode */}
+        {isCollapsed && (
+          <div
             style={{
-              background: "transparent",
-              border: "none",
-              color: "#94a3b8",
-              cursor: "pointer",
-              padding: "4px",
+              padding: "12px 16px",
               display: "flex",
+              gap: "8px",
               alignItems: "center",
             }}
-            aria-label={isCollapsed ? "Expand" : "Collapse"}
           >
-            {isCollapsed ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
-          </button>
-        </div>
+            {/* Status indicator dot */}
+            <div
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                background: getStatusColor(),
+                boxShadow: `0 0 8px ${getStatusColor()}`,
+                animation:
+                  recorder.state === "armed"
+                    ? "pulse 1.5s ease-in-out infinite"
+                    : "none",
+              }}
+              title={getStatusText()}
+            />
+
+            {/* Expand button */}
+            <button
+              onClick={handleToggleCollapse}
+              style={{
+                background: "#3b82f6",
+                border: "none",
+                color: "white",
+                cursor: "pointer",
+                padding: "6px 12px",
+                borderRadius: "6px",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                fontSize: "12px",
+                fontWeight: 600,
+              }}
+              title="Expand recorder"
+            >
+              <Maximize2 size={14} />
+              Expand
+            </button>
+          </div>
+        )}
 
         {/* Body - only show when not collapsed */}
         {!isCollapsed && (

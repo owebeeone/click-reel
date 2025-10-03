@@ -95,6 +95,13 @@ export interface UserPreferences {
   obfuscationEnabled: boolean;
   /** Custom keyboard shortcuts */
   keyboardShortcuts: KeyboardShortcuts;
+  /** Recorder UI preferences */
+  recorderUI: {
+    /** Show recorder on startup */
+    showOnStartup: boolean;
+    /** Start minimized (collapsed) */
+    startMinimized: boolean;
+  };
 }
 
 /**
