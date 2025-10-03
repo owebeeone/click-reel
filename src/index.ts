@@ -22,3 +22,26 @@ export { useKeyboardShortcuts } from "./react/hooks/useKeyboardShortcuts";
 
 // Export constants
 export * from "./utils/constants";
+
+// Export core functions
+export {
+  encodeGIF,
+  encodeAPNG,
+  estimateEncodedSize,
+  prepareFramesForEncoding,
+  optimizeFrames,
+  createPreviewGIF,
+  type ProgressCallback,
+} from "./core/encoder";
+
+export {
+  captureFrame,
+  captureManualFrame,
+  compareImages,
+} from "./core/capture";
+
+export {
+  generateReelMetadata,
+  exportMetadataJSON,
+  generateFilename,
+} from "./core/metadata";
