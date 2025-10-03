@@ -51,3 +51,15 @@ export {
   getStorageService,
   resetStorageService,
 } from "./core/storage";
+
+export {
+  exportReel,
+  downloadBlob,
+  downloadExport,
+  exportAndDownload,
+  createShareableLink,
+  estimateExportSize,
+  type ExportFormat,
+  type ExportOptions,
+  type ExportResult,
+} from "./core/export";
