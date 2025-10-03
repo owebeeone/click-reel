@@ -17,6 +17,7 @@ import {
   Minimize2,
   Maximize2,
   EyeOff,
+  Library,
 } from "lucide-react";
 import { useRecorder } from "./hooks/useRecorder";
 import { useClickReelContext } from "./context/ClickReelContext";
@@ -32,6 +33,10 @@ export interface ClickReelRecorderProps {
   initialCollapsed?: boolean;
   /** Callback when collapsed state changes */
   onCollapsedChange?: (collapsed: boolean) => void;
+  /** Callback when inventory button is clicked */
+  onInventoryClick?: () => void;
+  /** Callback when settings button is clicked */
+  onSettingsClick?: () => void;
 }
 
 /**
@@ -42,6 +47,8 @@ export function ClickReelRecorder({
   visible = true,
   initialCollapsed = false,
   onCollapsedChange,
+  onInventoryClick,
+  onSettingsClick,
 }: ClickReelRecorderProps) {
   const recorder = useRecorder();
   const { state } = useClickReelContext();
@@ -511,8 +518,9 @@ export function ClickReelRecorder({
                 Export GIF
               </button>
 
-              {/* Settings (placeholder) */}
+              {/* Inventory */}
               <button
+                onClick={onInventoryClick}
                 style={{
                   padding: "10px",
                   background: "transparent",
@@ -526,7 +534,40 @@ export function ClickReelRecorder({
                   gap: "6px",
                   fontSize: "13px",
                   fontWeight: 500,
-                  gridColumn: "span 2",
+                  transition: "all 0.2s",
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background =
+                    "rgba(255, 255, 255, 0.05)";
+                  e.currentTarget.style.color = "#e2e8f0";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.color = "#94a3b8";
+                }}
+                aria-label="Inventory"
+                title="View saved reels (Ctrl+Shift+E)"
+              >
+                <Library size={16} />
+                Inventory
+              </button>
+
+              {/* Settings */}
+              <button
+                onClick={onSettingsClick}
+                style={{
+                  padding: "10px",
+                  background: "transparent",
+                  color: "#94a3b8",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
+                  fontSize: "13px",
+                  fontWeight: 500,
                   transition: "all 0.2s",
                 }}
                 onMouseOver={(e) => {
@@ -539,6 +580,7 @@ export function ClickReelRecorder({
                   e.currentTarget.style.color = "#94a3b8";
                 }}
                 aria-label="Settings"
+                title="Open settings (Ctrl+Shift+G)"
               >
                 <Settings size={16} />
                 Settings

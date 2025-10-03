@@ -120,6 +120,8 @@ export interface KeyboardShortcuts {
   addFrame: string;
   /** Toggle settings panel */
   toggleSettings: string;
+  /** Toggle inventory panel */
+  toggleInventory: string;
 }
 
 /**

@@ -34,21 +34,29 @@ function DemoContent({
   const [showDebugDialog, setShowDebugDialog] = useState(false);
   const [showCaptureDebug, setShowCaptureDebug] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showInventory, setShowInventory] = useState(false);
 
   // Preferences hook
   const { preferences, savePreferences, resetToDefaults, isLoaded } =
     usePreferences();
 
-  // Apply showOnStartup preference to recorder visibility on mount
+  // Apply preferences to UI state on mount
   useEffect(() => {
-    if (
-      isLoaded &&
-      !preferences.recorderUI.showOnStartup &&
-      state.ui.recorderVisible
-    ) {
+    if (!isLoaded) return;
+
+    // Apply showOnStartup preference
+    if (!preferences.recorderUI.showOnStartup && state.ui.recorderVisible) {
       dispatch({ type: "TOGGLE_RECORDER_UI" as any });
       console.log(
         "📍 Hiding recorder on startup (showOnStartup preference is false)"
+      );
+    }
+
+    // Apply obfuscationEnabled preference to runtime state
+    if (preferences.obfuscationEnabled !== state.ui?.obfuscationActive) {
+      dispatch({ type: "TOGGLE_OBFUSCATION" as any });
+      console.log(
+        `📍 Setting obfuscation to ${preferences.obfuscationEnabled} (from preference)`
       );
     }
   }, [isLoaded]); // Run when preferences are loaded
@@ -81,6 +89,14 @@ function DemoContent({
       setShowSettings(newShowSettings);
       console.log(`Toggling settings to: ${newShowSettings}`);
       toast.success(`Settings ${newShowSettings ? "opened" : "closed"}`, {
+        duration: 2000,
+      });
+    },
+    onToggleInventory: () => {
+      const newShowInventory = !showInventory;
+      setShowInventory(newShowInventory);
+      console.log(`Toggling inventory to: ${newShowInventory}`);
+      toast.success(`Inventory ${newShowInventory ? "opened" : "closed"}`, {
         duration: 2000,
       });
     },
@@ -242,6 +258,8 @@ function DemoContent({
             },
           });
         }}
+        onInventoryClick={() => setShowInventory(true)}
+        onSettingsClick={() => setShowSettings(true)}
       />
 
       <h1 style={{ color: "#333", marginBottom: "0.5rem" }}>
@@ -271,6 +289,9 @@ function DemoContent({
           </div>
           <div>
             <code>Ctrl+Shift+G</code> - Toggle Settings Panel
+          </div>
+          <div>
+            <code>Ctrl+Shift+E</code> - Toggle Inventory Panel
           </div>
           <div>
             <code>Ctrl+Shift+S</code> - Start Recording
@@ -765,6 +786,63 @@ function DemoContent({
           toast.success("Reset to defaults!", { duration: 3000 });
         }}
       />
+
+      {/* Inventory Panel */}
+      {showInventory && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            zIndex: 999999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "2rem",
+          }}
+          onClick={() => setShowInventory(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "12px",
+              maxWidth: "900px",
+              width: "100%",
+              maxHeight: "80vh",
+              overflow: "auto",
+              padding: "2rem",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "1.5rem",
+              }}
+            >
+              <h2 style={{ margin: 0, color: "#1e293b" }}>Saved Reels</h2>
+              <button
+                onClick={() => setShowInventory(false)}
+                style={{
+                  padding: "8px 16px",
+                  background: "#f1f5f9",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#475569",
+                }}
+              >
+                Close
+              </button>
+            </div>
+            <ClickReelInventory />
+          </div>
+        </div>
+      )}
 
       {/* Debug Dialogs */}
       <CaptureDebugDialog

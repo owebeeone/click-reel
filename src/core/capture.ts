@@ -209,8 +209,14 @@ async function captureToDataURL(
       console.log("🔒 Obfuscation enabled, cloning and obfuscating DOM...");
       obfuscatedElement = obfuscateDOM(element, DEFAULT_OBFUSCATION_CONFIG);
 
-      // Replace the element in the DOM temporarily
-      if (element.parentNode) {
+      // For document.documentElement (html tag), we can't insert it into the DOM
+      // because there can only be one root element. Just capture the detached clone.
+      if (element === document.documentElement) {
+        console.log("🔒 Capturing obfuscated document root (detached)");
+        elementToCapture = obfuscatedElement;
+      }
+      // For other elements, replace temporarily in the DOM
+      else if (element.parentNode) {
         element.parentNode.insertBefore(obfuscatedElement, element);
         element.style.display = "none";
         elementToCapture = obfuscatedElement;
@@ -334,11 +340,19 @@ async function captureToDataURL(
     console.log("🎬 Starting html-to-image capture...");
     const dataUrl = await htmlToImage.toPng(elementToCapture, captureOptions);
 
-    // Clean up obfuscated element if it was created
-    if (obfuscatedElement && element.parentNode) {
-      element.parentNode.removeChild(obfuscatedElement);
-      element.style.display = "";
-      console.log("🔓 Removed obfuscated DOM clone");
+    // Clean up obfuscated element if it was created and inserted into DOM
+    if (
+      obfuscatedElement &&
+      element.parentNode &&
+      element !== document.documentElement
+    ) {
+      try {
+        element.parentNode.removeChild(obfuscatedElement);
+        element.style.display = "";
+        console.log("🔓 Removed obfuscated DOM clone");
+      } catch (err) {
+        console.warn("Could not remove obfuscated element:", err);
+      }
     }
 
     // Restore fixed elements immediately
@@ -386,13 +400,17 @@ async function captureToDataURL(
 
     return dataUrl;
   } catch (error) {
-    // Clean up obfuscated element on error
-    if (obfuscatedElement && element.parentNode) {
+    // Clean up obfuscated element on error (only if it was inserted into DOM)
+    if (
+      obfuscatedElement &&
+      element.parentNode &&
+      element !== document.documentElement
+    ) {
       try {
         element.parentNode.removeChild(obfuscatedElement);
         element.style.display = "";
       } catch (cleanupError) {
-        console.error("Error cleaning up obfuscated element:", cleanupError);
+        console.warn("Error cleaning up obfuscated element:", cleanupError);
       }
     }
 

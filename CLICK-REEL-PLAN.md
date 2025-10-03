@@ -899,7 +899,7 @@ function replaceText(text: string): string;
 
 **Tasks**:
 
-- [ ] Integrate all phases into cohesive library
+- [x] Integrate all phases into cohesive library
 - [ ] Test complete user flows end-to-end
   - Start recording → capture clicks → view inventory → download
 - [ ] Performance optimization
@@ -913,6 +913,10 @@ function replaceText(text: string): string;
   - Export button shows spinner when exporting
   - Modal dialog during export operation
   - Per-reel export state tracking
+- [x] Add inventory panel as modal/popover
+  - Keyboard shortcut Ctrl+Shift+E
+  - Button on recorder panel
+  - Modal overlay with full inventory UI
 - [ ] Implement telemetry (opt-in, anonymized) (deferred)
   - Track usage patterns
   - Identify performance bottlenecks

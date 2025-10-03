@@ -13,6 +13,7 @@ export interface KeyboardShortcutHandlers {
   onArmCapture?: () => void;
   onAddFrame?: () => void;
   onToggleSettings?: () => void;
+  onToggleInventory?: () => void;
 }
 
 export interface KeyboardShortcutConfig {
@@ -23,6 +24,7 @@ export interface KeyboardShortcutConfig {
   armCapture?: string;
   addFrame?: string;
   toggleSettings?: string;
+  toggleInventory?: string;
 }
 
 /**
@@ -40,6 +42,7 @@ export function useKeyboardShortcuts(
     armCapture: config?.armCapture || "ctrl+shift+a",
     addFrame: config?.addFrame || "ctrl+shift+f",
     toggleSettings: config?.toggleSettings || "ctrl+shift+g",
+    toggleInventory: config?.toggleInventory || "ctrl+shift+e",
   };
 
   // Toggle recorder UI visibility
@@ -115,6 +118,17 @@ export function useKeyboardShortcuts(
       e.preventDefault();
       handlers.onToggleSettings?.();
       console.log("Keyboard shortcut: Toggle settings");
+    },
+    { enableOnFormTags: false }
+  );
+
+  // Toggle inventory
+  useHotkeys(
+    shortcuts.toggleInventory,
+    (e) => {
+      e.preventDefault();
+      handlers.onToggleInventory?.();
+      console.log("Keyboard shortcut: Toggle inventory");
     },
     { enableOnFormTags: false }
   );
