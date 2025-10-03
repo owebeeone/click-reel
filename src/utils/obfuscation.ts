@@ -3,11 +3,8 @@
  * Replaces user content with placeholder data while preserving structure
  */
 
-import { ObfuscationConfig } from "../types/config";
+import type { ObfuscationConfig } from "../types/config";
 
-/**
- * Default obfuscation configuration
- */
 export const DEFAULT_OBFUSCATION_CONFIG: ObfuscationConfig = {
   obfuscateText: true,
   obfuscateImages: true,
@@ -30,6 +27,18 @@ export const DEFAULT_OBFUSCATION_CONFIG: ObfuscationConfig = {
 };
 
 /**
+ * Store original values for restoration
+ */
+export interface ObfuscationBackup {
+  textNodes: Array<{ node: Text; originalText: string }>;
+  inputs: Array<{
+    el: HTMLInputElement | HTMLTextAreaElement;
+    originalValue: string;
+    originalPlaceholder: string;
+  }>;
+}
+
+/**
  * Check if an element should be preserved (not obfuscated)
  */
 function shouldPreserve(
@@ -41,110 +50,101 @@ function shouldPreserve(
     return true;
   }
 
-  // Check if element matches any preserve selectors
-  return config.preserveSelectors.some((selector) => {
+  // Check if element matches any preserve selector
+  for (const selector of config.preserveSelectors) {
     try {
-      return element.matches(selector);
-    } catch {
-      return false;
+      if (element.matches(selector)) {
+        return true;
+      }
+    } catch (e) {
+      // Invalid selector, skip
+      continue;
     }
-  });
+  }
+
+  return false;
 }
 
 /**
- * Check if an element should be obfuscated
+ * Check if obfuscation should be applied to an element
  */
 export function shouldObfuscate(
   element: HTMLElement,
   config: ObfuscationConfig
 ): boolean {
-  // Always preserve excluded elements
-  if (element.hasAttribute("data-screenshot-exclude")) {
-    return false;
-  }
-
-  // Check if explicitly marked for preservation
+  // If explicitly preserved, don't obfuscate
   if (shouldPreserve(element, config)) {
     return false;
   }
 
-  // Check if element has obfuscate attribute
+  // If element has obfuscate attribute, obfuscate it
   if (element.hasAttribute("data-screenshot-obfuscate")) {
     return true;
   }
 
-  // Check if element matches any obfuscate selectors
-  return config.obfuscateSelectors.some((selector) => {
+  // Check if element matches any obfuscate selector
+  for (const selector of config.obfuscateSelectors) {
     try {
-      return element.matches(selector);
-    } catch {
-      return false;
+      if (element.matches(selector)) {
+        return true;
+      }
+    } catch (e) {
+      // Invalid selector, skip
+      continue;
     }
-  });
-}
-
-/**
- * Replace text with placeholder characters while preserving length and structure
- */
-function replaceText(text: string, replacementChar: string = "█"): string {
-  if (!text || text.trim().length === 0) {
-    return text;
   }
 
-  return text.replace(/\S/g, (char) => {
-    // Preserve whitespace, newlines, and punctuation structure
-    if (/\s/.test(char)) return char;
-    if (/[.,!?;:(){}[\]"'`]/.test(char)) return char;
-    // Replace alphanumeric and other visible characters
-    return replacementChar;
-  });
+  return false;
 }
 
 /**
- * Obfuscate text content in an element
+ * Replace text with placeholder characters (preserving length and whitespace structure)
+ */
+function replaceText(text: string, replacementChar: string): string {
+  return text.replace(/\S/g, replacementChar);
+}
+
+/**
+ * Obfuscate text content recursively
  */
 function obfuscateTextContent(
   element: HTMLElement,
   config: ObfuscationConfig
 ): void {
-  // Skip if text obfuscation is disabled
   if (!config.obfuscateText) return;
 
-  // Skip if this element should be preserved
-  if (shouldPreserve(element, config)) return;
-
-  // Process text nodes
+  // Walk through all text nodes
   const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
     acceptNode: (node) => {
-      const parent = node.parentElement;
-      if (!parent) return NodeFilter.FILTER_REJECT;
-
-      // Skip script, style, and preserved elements
+      // Skip script and style tags
       if (
-        parent.tagName === "SCRIPT" ||
-        parent.tagName === "STYLE" ||
-        shouldPreserve(parent, config)
+        node.parentElement?.tagName === "SCRIPT" ||
+        node.parentElement?.tagName === "STYLE"
       ) {
         return NodeFilter.FILTER_REJECT;
       }
-
       return NodeFilter.FILTER_ACCEPT;
     },
   });
 
-  const textNodes: Node[] = [];
+  const textNodes: Text[] = [];
   let node: Node | null;
   while ((node = walker.nextNode())) {
-    textNodes.push(node);
+    textNodes.push(node as Text);
   }
 
-  // Replace text in all collected nodes
   textNodes.forEach((textNode) => {
-    if (textNode.textContent) {
-      textNode.textContent = replaceText(
-        textNode.textContent,
-        config.replacementChar
-      );
+    const parent = textNode.parentElement;
+    if (!parent) return;
+
+    // Check if parent should be preserved
+    if (shouldPreserve(parent, config)) {
+      return;
+    }
+
+    const text = textNode.textContent;
+    if (text && text.trim().length > 0) {
+      textNode.textContent = replaceText(text, config.replacementChar);
     }
   });
 }
@@ -251,27 +251,23 @@ function obfuscateInputs(
 }
 
 /**
- * Obfuscate data attributes (except screenshot-related ones)
+ * Obfuscate data-* attributes
  */
 function obfuscateDataAttributes(
   element: HTMLElement,
   config: ObfuscationConfig
 ): void {
-  const allElements = element.querySelectorAll("*");
-  allElements.forEach((el) => {
+  const elements = element.querySelectorAll("*");
+  elements.forEach((el) => {
     const htmlEl = el as HTMLElement;
     if (shouldPreserve(htmlEl, config)) return;
 
-    // Get all data attributes
-    const dataAttrs = Array.from(htmlEl.attributes).filter((attr) =>
-      attr.name.startsWith("data-")
-    );
-
-    dataAttrs.forEach((attr) => {
-      // Skip screenshot-related attributes
+    // Obfuscate data-* attributes
+    Array.from(htmlEl.attributes).forEach((attr) => {
       if (
-        attr.name.startsWith("data-screenshot-") ||
-        attr.name === "data-testid"
+        attr.name.startsWith("data-") &&
+        attr.name !== "data-screenshot-preserve" &&
+        attr.name !== "data-screenshot-obfuscate"
       ) {
         return;
       }
@@ -288,17 +284,119 @@ function obfuscateDataAttributes(
 }
 
 /**
- * Obfuscate a DOM element and its children
- * Returns a cloned, obfuscated copy of the element
+ * Non-destructive obfuscation - temporarily replaces text in-place
+ * Returns backup data for restoration
  */
-export function obfuscateDOM(
+export function obfuscateInPlace(
   element: HTMLElement,
   config: ObfuscationConfig = DEFAULT_OBFUSCATION_CONFIG
-): HTMLElement {
-  // Clone the element to avoid modifying the original
-  const cloned = element.cloneNode(true) as HTMLElement;
+): ObfuscationBackup {
+  const backup: ObfuscationBackup = {
+    textNodes: [],
+    inputs: [],
+  };
 
-  // Apply obfuscation
+  // Obfuscate text nodes
+  if (config.obfuscateText) {
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
+      acceptNode: (node) => {
+        // Skip script, style, and empty text nodes
+        const parent = node.parentElement;
+        if (
+          !parent ||
+          parent.tagName === "SCRIPT" ||
+          parent.tagName === "STYLE"
+        ) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        if (!node.textContent || node.textContent.trim() === "") {
+          return NodeFilter.FILTER_REJECT;
+        }
+        // Check if parent should be preserved
+        if (shouldPreserve(parent, config)) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    });
+
+    let textNode: Text | null;
+    while ((textNode = walker.nextNode() as Text)) {
+      const originalText = textNode.textContent || "";
+      if (originalText.trim()) {
+        backup.textNodes.push({ node: textNode, originalText });
+        textNode.textContent = replaceText(
+          originalText,
+          config.replacementChar
+        );
+      }
+    }
+  }
+
+  // Obfuscate input values
+  if (config.obfuscateInputs) {
+    const inputs = element.querySelectorAll("input, textarea") as NodeListOf<
+      HTMLInputElement | HTMLTextAreaElement
+    >;
+    inputs.forEach((input) => {
+      if (shouldPreserve(input, config)) return;
+
+      const originalValue = input.value;
+      const originalPlaceholder = input.placeholder;
+
+      if (originalValue) {
+        backup.inputs.push({ el: input, originalValue, originalPlaceholder });
+        input.value = config.replacementChar.repeat(originalValue.length);
+        if (input.placeholder) {
+          input.placeholder = config.replacementChar.repeat(
+            input.placeholder.length
+          );
+        }
+      }
+    });
+  }
+
+  console.log(
+    `🔒 Obfuscated ${backup.textNodes.length} text nodes and ${backup.inputs.length} inputs in-place`
+  );
+  return backup;
+}
+
+/**
+ * Restore original text from backup
+ */
+export function restoreObfuscation(backup: ObfuscationBackup): void {
+  // Restore text nodes
+  backup.textNodes.forEach(({ node, originalText }) => {
+    if (node.parentNode) {
+      // Check node is still in DOM
+      node.textContent = originalText;
+    }
+  });
+
+  // Restore inputs
+  backup.inputs.forEach(({ el, originalValue, originalPlaceholder }) => {
+    if (el.parentNode) {
+      // Check element is still in DOM
+      el.value = originalValue;
+      el.placeholder = originalPlaceholder;
+    }
+  });
+
+  console.log(
+    `🔓 Restored ${backup.textNodes.length} text nodes and ${backup.inputs.length} inputs`
+  );
+}
+
+/**
+ * Main obfuscation function - clones element and obfuscates content
+ */
+export function obfuscateDOM(
+  originalElement: HTMLElement,
+  config: ObfuscationConfig
+): HTMLElement {
+  const cloned = originalElement.cloneNode(true) as HTMLElement;
+
   obfuscateTextContent(cloned, config);
   obfuscateImages(cloned, config);
   obfuscateInputs(cloned, config);

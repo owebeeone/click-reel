@@ -15,7 +15,12 @@ import {
   createMarkerElement,
 } from "../utils/dom-utils";
 import { DEFAULT_MARKER_STYLE } from "../utils/constants";
-import { obfuscateDOM, DEFAULT_OBFUSCATION_CONFIG } from "../utils/obfuscation";
+import {
+  obfuscateInPlace,
+  restoreObfuscation,
+  DEFAULT_OBFUSCATION_CONFIG,
+  type ObfuscationBackup,
+} from "../utils/obfuscation";
 
 /**
  * Captures a single frame from a pointer event
@@ -151,8 +156,8 @@ async function captureToDataURL(
   const excludedElements: Array<{ el: HTMLElement; originalDisplay: string }> =
     [];
 
-  // Declare obfuscatedElement outside try block for cleanup in catch
-  let obfuscatedElement: HTMLElement | null = null;
+  // For in-place obfuscation
+  let obfuscationBackup: ObfuscationBackup | null = null;
 
   try {
     console.log("Capturing element:", element.tagName, {
@@ -202,28 +207,13 @@ async function captureToDataURL(
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
 
-    // Apply obfuscation if enabled
-    let elementToCapture = element;
-
+    // Apply obfuscation if enabled (in-place, non-destructive)
     if (options.obfuscationEnabled) {
-      console.log("🔒 Obfuscation enabled, cloning and obfuscating DOM...");
-      obfuscatedElement = obfuscateDOM(element, DEFAULT_OBFUSCATION_CONFIG);
+      console.log("🔒 Obfuscation enabled, temporarily replacing text...");
+      obfuscationBackup = obfuscateInPlace(element, DEFAULT_OBFUSCATION_CONFIG);
 
-      // For document.documentElement (html tag), we can't insert it into the DOM
-      // because there can only be one root element. Just capture the detached clone.
-      if (element === document.documentElement) {
-        console.log("🔒 Capturing obfuscated document root (detached)");
-        elementToCapture = obfuscatedElement;
-      }
-      // For other elements, replace temporarily in the DOM
-      else if (element.parentNode) {
-        element.parentNode.insertBefore(obfuscatedElement, element);
-        element.style.display = "none";
-        elementToCapture = obfuscatedElement;
-
-        // Force reflow
-        void obfuscatedElement.offsetHeight;
-      }
+      // Force a small delay to ensure text updates are rendered
+      await new Promise((resolve) => setTimeout(resolve, 10));
     }
 
     // Get the background color of the page/element
@@ -338,21 +328,12 @@ async function captureToDataURL(
     }
 
     console.log("🎬 Starting html-to-image capture...");
-    const dataUrl = await htmlToImage.toPng(elementToCapture, captureOptions);
+    const dataUrl = await htmlToImage.toPng(element, captureOptions);
 
-    // Clean up obfuscated element if it was created and inserted into DOM
-    if (
-      obfuscatedElement &&
-      element.parentNode &&
-      element !== document.documentElement
-    ) {
-      try {
-        element.parentNode.removeChild(obfuscatedElement);
-        element.style.display = "";
-        console.log("🔓 Removed obfuscated DOM clone");
-      } catch (err) {
-        console.warn("Could not remove obfuscated element:", err);
-      }
+    // Restore obfuscated text immediately
+    if (obfuscationBackup) {
+      restoreObfuscation(obfuscationBackup);
+      obfuscationBackup = null;
     }
 
     // Restore fixed elements immediately
@@ -400,17 +381,12 @@ async function captureToDataURL(
 
     return dataUrl;
   } catch (error) {
-    // Clean up obfuscated element on error (only if it was inserted into DOM)
-    if (
-      obfuscatedElement &&
-      element.parentNode &&
-      element !== document.documentElement
-    ) {
+    // Restore obfuscated text on error
+    if (obfuscationBackup) {
       try {
-        element.parentNode.removeChild(obfuscatedElement);
-        element.style.display = "";
+        restoreObfuscation(obfuscationBackup);
       } catch (cleanupError) {
-        console.warn("Error cleaning up obfuscated element:", cleanupError);
+        console.warn("Error restoring obfuscated text:", cleanupError);
       }
     }
 

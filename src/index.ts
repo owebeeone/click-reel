@@ -43,6 +43,8 @@ export * from "./utils/constants";
 // Export obfuscation utilities
 export {
   obfuscateDOM,
+  obfuscateInPlace,
+  restoreObfuscation,
   isObfuscationEnabled,
   setObfuscationState,
   DEFAULT_OBFUSCATION_CONFIG,
