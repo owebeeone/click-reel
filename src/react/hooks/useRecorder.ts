@@ -28,6 +28,56 @@ export function useRecorder(): RecorderAPI {
       document.body;
   }, []);
 
+  // Handle page unload to save recording
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (
+        state.recorderState === "recording" ||
+        state.recorderState === "armed"
+      ) {
+        // Save the current reel to storage before unloading
+        if (state.currentReel && state.currentReel.frames.length > 0) {
+          const storage = getStorageService();
+          // Note: This is fire-and-forget in beforeunload
+          storage.saveReel(state.currentReel).catch((err) => {
+            console.error("Failed to save reel during page unload:", err);
+          });
+        }
+
+        // Show warning to user
+        const message =
+          "You have an active recording. Are you sure you want to leave?";
+        event.preventDefault();
+        event.returnValue = message;
+        return message;
+      }
+    };
+
+    const handlePageHide = () => {
+      // Attempt to save the current reel when page is hidden
+      if (
+        (state.recorderState === "recording" ||
+          state.recorderState === "armed") &&
+        state.currentReel &&
+        state.currentReel.frames.length > 0
+      ) {
+        console.log("Page hide detected, saving recording...");
+        const storage = getStorageService();
+        storage.saveReel(state.currentReel).catch((err) => {
+          console.error("Failed to save reel during page hide:", err);
+        });
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pagehide", handlePageHide);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pagehide", handlePageHide);
+    };
+  }, [state.recorderState, state.currentReel]);
+
   const startRecording = useCallback(async () => {
     try {
       const reelId = nanoid();
@@ -291,30 +341,32 @@ export function useRecorder(): RecorderAPI {
           document.querySelector("#__next") ||
           document.body;
 
-        // Capture the frame with the real pointer event
-        const frame = await captureFrame(
+        const captureOptions = {
+          root: captureRoot,
+          scale: state.currentReel.settings.scale,
+          maxWidth: state.currentReel.settings.maxWidth,
+          maxHeight: state.currentReel.settings.maxHeight,
+          markerStyle: {
+            size: state.currentReel.settings.markerSize,
+            color: state.currentReel.settings.markerColor,
+          },
+          obfuscationEnabled: state.currentReel.settings.obfuscationEnabled,
+        };
+
+        // Capture the PRE-CLICK frame with the marker
+        const preClickFrame = await captureFrame(
           captureRoot,
           event,
-          {
-            root: captureRoot,
-            scale: state.currentReel.settings.scale,
-            maxWidth: state.currentReel.settings.maxWidth,
-            maxHeight: state.currentReel.settings.maxHeight,
-            markerStyle: {
-              size: state.currentReel.settings.markerSize,
-              color: state.currentReel.settings.markerColor,
-            },
-            obfuscationEnabled: state.currentReel.settings.obfuscationEnabled,
-          },
+          captureOptions,
           state.currentReel.id,
           state.currentReel.frames.length,
           "pre-click"
         );
 
-        // Add frame to reel
-        const updatedReel = {
+        // Add pre-click frame to reel
+        let updatedReel = {
           ...state.currentReel,
-          frames: [...state.currentReel.frames, frame],
+          frames: [...state.currentReel.frames, preClickFrame],
         };
 
         dispatch({
@@ -324,13 +376,26 @@ export function useRecorder(): RecorderAPI {
 
         dispatch({
           type: ActionType.ADD_FRAME,
-          payload: { reelId: state.currentReel.id, frameId: frame.id },
+          payload: { reelId: state.currentReel.id, frameId: preClickFrame.id },
         });
 
-        // Automatically disarm after capture
+        console.log(
+          "Pre-click frame captured, starting post-click sequence..."
+        );
+
+        // Schedule POST-CLICK frames to capture animation settling
+        await schedulePostClickCaptures(
+          captureRoot,
+          event,
+          captureOptions,
+          state.currentReel.id,
+          updatedReel.frames.length
+        );
+
+        // Automatically disarm after capture sequence completes
         dispatch({ type: ActionType.DISARM });
 
-        console.log("Click frame captured successfully!");
+        console.log("Click capture sequence completed!");
       } catch (error) {
         console.error("Failed to capture click frame:", error);
         dispatch({
@@ -346,6 +411,101 @@ export function useRecorder(): RecorderAPI {
           type: ActionType.SET_LOADING,
           payload: { key: "capturing", value: false },
         });
+      }
+    },
+    [dispatch, state.currentReel]
+  );
+
+  // Schedule post-click frame captures with delay and settled detection
+  const schedulePostClickCaptures = useCallback(
+    async (
+      root: HTMLElement,
+      originalEvent: PointerEvent,
+      options: any,
+      reelId: string,
+      startOrder: number
+    ) => {
+      const postClickDelay = state.currentReel?.settings.postClickDelay || 500;
+      const postClickInterval =
+        state.currentReel?.settings.postClickInterval || 100;
+      const maxCaptureDuration =
+        state.currentReel?.settings.maxCaptureDuration || 4000;
+
+      console.log("Post-click capture settings:", {
+        postClickDelay,
+        postClickInterval,
+        maxCaptureDuration,
+      });
+
+      // Wait for initial delay
+      await new Promise((resolve) => setTimeout(resolve, postClickDelay));
+
+      const startTime = Date.now();
+      let previousImageData: string | Blob | null = null;
+      let consecutiveIdenticalFrames = 0;
+      let frameOrder = startOrder;
+
+      while (Date.now() - startTime < maxCaptureDuration) {
+        try {
+          // Capture post-click frame (no marker)
+          const postFrame = await captureFrame(
+            root,
+            originalEvent,
+            options,
+            reelId,
+            frameOrder++,
+            "post-click"
+          );
+
+          // Check if settled (two consecutive identical frames)
+          // Compare by string representation (data URL or blob URL)
+          const currentImageData =
+            typeof postFrame.image === "string"
+              ? postFrame.image
+              : postFrame.image.toString();
+          const prevImageData =
+            typeof previousImageData === "string"
+              ? previousImageData
+              : previousImageData?.toString();
+
+          if (prevImageData && currentImageData === prevImageData) {
+            consecutiveIdenticalFrames++;
+            console.log(
+              `Consecutive identical frames: ${consecutiveIdenticalFrames}`
+            );
+
+            if (consecutiveIdenticalFrames >= 1) {
+              console.log("Animation settled, stopping post-click capture");
+              break;
+            }
+          } else {
+            consecutiveIdenticalFrames = 0;
+          }
+
+          previousImageData = postFrame.image;
+
+          // Add frame to reel
+          dispatch({
+            type: ActionType.ADD_FRAME,
+            payload: { reelId, frameId: postFrame.id },
+          });
+
+          console.log(`Post-click frame ${frameOrder - startOrder} captured`);
+
+          // Wait for next interval
+          await new Promise((resolve) =>
+            setTimeout(resolve, postClickInterval)
+          );
+        } catch (error) {
+          console.error("Post-click frame capture failed:", error);
+          break;
+        }
+      }
+
+      if (Date.now() - startTime >= maxCaptureDuration) {
+        console.log(
+          "Max capture duration reached, stopping post-click capture"
+        );
       }
     },
     [dispatch, state.currentReel]

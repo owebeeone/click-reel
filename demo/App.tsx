@@ -11,6 +11,8 @@ import {
   useClickReelContext,
   type ExportFormat,
 } from "../src";
+import { useKeyboardShortcuts } from "../src/react/hooks/useKeyboardShortcuts";
+import toast, { Toaster } from "react-hot-toast";
 import "./index.css";
 
 function DemoContent() {
@@ -19,14 +21,58 @@ function DemoContent() {
   const recorder = useRecorder();
   const storage = useStorage();
   const [storageInfo, setStorageInfo] = useState<string>("");
+  const [recorderVisible, setRecorderVisible] = useState(true);
+  const [obfuscationEnabled, setObfuscationEnabled] = useState(false);
+
+  // Set up keyboard shortcuts
+  useKeyboardShortcuts({
+    onToggleRecorder: () => {
+      const newVisible = !recorderVisible;
+      setRecorderVisible(newVisible);
+      toast.success(`Recorder ${newVisible ? "shown" : "hidden"}`, {
+        duration: 5000,
+      });
+    },
+    onToggleObfuscation: () => {
+      const newObfuscation = !obfuscationEnabled;
+      setObfuscationEnabled(newObfuscation);
+      toast.success(`Obfuscation ${newObfuscation ? "enabled" : "disabled"}`, {
+        duration: 5000,
+      });
+    },
+    onStartRecording: () => {
+      if (recorder.state === "idle") {
+        handleStartRecording();
+      }
+    },
+    onStopRecording: () => {
+      if (recorder.state === "recording" || recorder.state === "armed") {
+        handleStopRecording();
+      }
+    },
+    onArmCapture: () => {
+      if (recorder.state === "recording") {
+        recorder.arm();
+      }
+    },
+    onAddFrame: () => {
+      if (recorder.state === "recording") {
+        handleAddFrame();
+      }
+    },
+  });
 
   const handleStartRecording = async () => {
     try {
       await recorder.startRecording();
-      alert("Recording started! Click 'Add Frame' or 'Arm' to capture clicks.");
+      toast.success(
+        "Recording started! Click 'Add Frame' or 'Arm' to capture clicks.",
+        { duration: 5000 }
+      );
     } catch (error) {
-      alert(
-        `Failed to start recording: ${error instanceof Error ? error.message : String(error)}`
+      toast.error(
+        `Failed to start recording: ${error instanceof Error ? error.message : String(error)}`,
+        { duration: 5000 }
       );
     }
   };
@@ -34,11 +80,12 @@ function DemoContent() {
   const handleStopRecording = async () => {
     try {
       await recorder.stopRecording();
-      alert("Recording saved!");
+      toast.success("Recording saved!", { duration: 5000 });
       await updateStorageInfo();
     } catch (error) {
-      alert(
-        `Failed to stop recording: ${error instanceof Error ? error.message : String(error)}`
+      toast.error(
+        `Failed to stop recording: ${error instanceof Error ? error.message : String(error)}`,
+        { duration: 5000 }
       );
     }
   };
@@ -46,11 +93,14 @@ function DemoContent() {
   const handleAddFrame = async () => {
     try {
       await recorder.addFrame();
-      alert("Frame captured! Check console for capture details.");
+      toast.success("Frame captured! Check console for capture details.", {
+        duration: 5000,
+      });
     } catch (error) {
       console.error("Frame capture error:", error);
-      alert(
-        `Failed to capture frame: ${error instanceof Error ? error.message : String(error)}`
+      toast.error(
+        `Failed to capture frame: ${error instanceof Error ? error.message : String(error)}`,
+        { duration: 5000 }
       );
     }
   };
@@ -59,17 +109,25 @@ function DemoContent() {
     const targetReelId = reelId || recorder.currentReel?.id;
 
     if (!targetReelId) {
-      alert("No reel selected. Start a recording or select a saved reel!");
+      toast.error(
+        "No reel selected. Start a recording or select a saved reel!",
+        {
+          duration: 5000,
+        }
+      );
       return;
     }
 
     try {
       await recorder.exportReel(targetReelId, exportFormat);
-      alert(`Exported successfully as ${exportFormat.toUpperCase()}!`);
+      toast.success(`Exported successfully as ${exportFormat.toUpperCase()}!`, {
+        duration: 5000,
+      });
     } catch (error) {
       console.error("Export error:", error);
-      alert(
-        `Export failed: ${error instanceof Error ? error.message : String(error)}`
+      toast.error(
+        `Export failed: ${error instanceof Error ? error.message : String(error)}`,
+        { duration: 5000 }
       );
     }
   };
@@ -92,10 +150,11 @@ function DemoContent() {
         await storage.deleteReel(reel.id);
       }
       await updateStorageInfo();
-      alert("Storage cleared!");
+      toast.success("Storage cleared!", { duration: 5000 });
     } catch (error) {
-      alert(
-        `Clear failed: ${error instanceof Error ? error.message : String(error)}`
+      toast.error(
+        `Clear failed: ${error instanceof Error ? error.message : String(error)}`,
+        { duration: 5000 }
       );
     }
   };
@@ -104,10 +163,13 @@ function DemoContent() {
     try {
       await storage.loadInventory();
       await updateStorageInfo();
-      alert(`Loaded ${state.inventory.length} reels`);
+      toast.success(`Loaded ${state.inventory.length} reels`, {
+        duration: 5000,
+      });
     } catch (error) {
-      alert(
-        `Failed to load inventory: ${error instanceof Error ? error.message : String(error)}`
+      toast.error(
+        `Failed to load inventory: ${error instanceof Error ? error.message : String(error)}`,
+        { duration: 5000 }
       );
     }
   };
@@ -122,12 +184,51 @@ function DemoContent() {
         margin: "0 auto",
       }}
     >
+      {recorderVisible && <ClickReelRecorder />}
+
       <h1 style={{ color: "#333", marginBottom: "0.5rem" }}>
         Click Reel Playground 🎬
       </h1>
       <p style={{ color: "#666", marginBottom: "2rem" }}>
         Test the click-reel library with real state management!
       </p>
+
+      {/* Keyboard Shortcuts Guide */}
+      <section
+        style={{
+          padding: "1rem",
+          background: "#f0f9ff",
+          border: "1px solid #bae6fd",
+          borderRadius: "8px",
+          marginBottom: "2rem",
+        }}
+      >
+        <h3 style={{ margin: "0 0 0.5rem 0" }}>⌨️ Keyboard Shortcuts</h3>
+        <div style={{ fontSize: "14px", lineHeight: "1.8" }}>
+          <div>
+            <code>Ctrl+Shift+R</code> - Toggle Recorder Visibility
+          </div>
+          <div>
+            <code>Ctrl+Shift+O</code> - Toggle Obfuscation
+          </div>
+          <div>
+            <code>Ctrl+Shift+S</code> - Start Recording
+          </div>
+          <div>
+            <code>Ctrl+Shift+X</code> - Stop Recording
+          </div>
+          <div>
+            <code>Ctrl+Shift+A</code> - Arm Capture (when recording)
+          </div>
+          <div>
+            <code>Ctrl+Shift+F</code> - Add Frame (when recording)
+          </div>
+        </div>
+        <div style={{ marginTop: "0.5rem", fontSize: "12px", color: "#666" }}>
+          Status: Recorder {recorderVisible ? "Visible" : "Hidden"} |
+          Obfuscation {obfuscationEnabled ? "Enabled" : "Disabled"}
+        </div>
+      </section>
 
       {/* Current State Display */}
       <section
@@ -607,6 +708,28 @@ function DemoContent() {
 function App() {
   return (
     <ClickReelProvider>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 5000,
+          style: {
+            background: "#333",
+            color: "#fff",
+          },
+          success: {
+            iconTheme: {
+              primary: "#4caf50",
+              secondary: "#fff",
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: "#f44336",
+              secondary: "#fff",
+            },
+          },
+        }}
+      />
       <DemoContent />
     </ClickReelProvider>
   );
