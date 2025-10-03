@@ -39,12 +39,41 @@ export interface ObfuscationBackup {
 }
 
 /**
+ * Check PII status by walking up the DOM tree
+ * Returns true if element should be obfuscated based on PII classes
+ */
+function shouldObfuscateByPII(element: HTMLElement): boolean | null {
+  let current: HTMLElement | null = element;
+  
+  while (current) {
+    // Check for explicit PII markers
+    if (current.classList.contains('pii-enable')) {
+      return true; // Obfuscate
+    }
+    if (current.classList.contains('pii-disable')) {
+      return false; // Don't obfuscate
+    }
+    
+    // Move up the tree
+    current = current.parentElement;
+  }
+  
+  return null; // No explicit PII marker found
+}
+
+/**
  * Check if an element should be preserved (not obfuscated)
  */
 function shouldPreserve(
   element: HTMLElement,
   config: ObfuscationConfig
 ): boolean {
+  // Check PII classes first (highest priority)
+  const piiStatus = shouldObfuscateByPII(element);
+  if (piiStatus === false) {
+    return true; // pii-disable means preserve
+  }
+
   // Check if element has preserve attribute
   if (element.hasAttribute("data-screenshot-preserve")) {
     return true;
@@ -72,6 +101,12 @@ export function shouldObfuscate(
   element: HTMLElement,
   config: ObfuscationConfig
 ): boolean {
+  // Check PII classes first (highest priority)
+  const piiStatus = shouldObfuscateByPII(element);
+  if (piiStatus !== null) {
+    return piiStatus; // Explicit PII decision
+  }
+
   // If explicitly preserved, don't obfuscate
   if (shouldPreserve(element, config)) {
     return false;

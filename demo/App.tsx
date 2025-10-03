@@ -943,6 +943,7 @@ function DemoContent({
           <input
             type="text"
             placeholder="Type here..."
+            className="pii-enable"
             style={{
               padding: "1rem",
               fontSize: "1rem",

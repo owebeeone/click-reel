@@ -26,6 +26,12 @@ export interface InventoryItemProps {
   onDelete?: () => void;
   /** Whether export is in progress */
   isExporting?: boolean;
+  /** Whether this item is being edited (for modal behavior) */
+  isEditing?: boolean;
+  /** Callback when edit mode starts */
+  onEditStart?: () => void;
+  /** Callback when edit mode ends */
+  onEditEnd?: () => void;
 }
 
 /**
@@ -37,11 +43,18 @@ export function InventoryItem({
   onExport,
   onDelete,
   isExporting = false,
+  isEditing: externalIsEditing = false,
+  onEditStart,
+  onEditEnd,
 }: InventoryItemProps) {
-  const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(reel.title);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  // Sync edited title with reel title when it changes
+  useEffect(() => {
+    setEditedTitle(reel.title);
+  }, [reel.title]);
 
   // Close export menu when clicking outside
   useEffect(() => {
@@ -61,14 +74,23 @@ export function InventoryItem({
     }
   }, [showExportMenu]);
 
+  const handleStartEdit = () => {
+    onEditStart?.();
+  };
+
   const handleSaveTitle = () => {
-    // TODO: Implement title update in storage
-    setIsEditing(false);
+    // TODO: Implement title update in storage via callback
+    // For now, just update local state - parent should handle persistence
+    if (editedTitle.trim() !== reel.title) {
+      // Update would need to be passed up via prop
+      console.log(`Title update: "${reel.title}" -> "${editedTitle}"`);
+    }
+    onEditEnd?.();
   };
 
   const handleCancelEdit = () => {
     setEditedTitle(reel.title);
-    setIsEditing(false);
+    onEditEnd?.();
   };
 
   const formatDate = (timestamp: number) => {
@@ -101,6 +123,7 @@ export function InventoryItem({
 
   return (
     <div
+      className="pii-enable"
       style={{
         display: "flex",
         gap: "1rem",
@@ -185,7 +208,7 @@ export function InventoryItem({
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
         {/* Title */}
-        {isEditing ? (
+        {externalIsEditing ? (
           <div
             style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}
           >
@@ -260,7 +283,8 @@ export function InventoryItem({
               {reel.title}
             </h3>
             <button
-              onClick={() => setIsEditing(true)}
+              onClick={handleStartEdit}
+              disabled={isExporting}
               style={{
                 padding: "4px",
                 background: "transparent",
@@ -297,6 +321,7 @@ export function InventoryItem({
 
         {/* Metadata */}
         <div
+          className="pii-disable"
           style={{
             display: "flex",
             gap: "1rem",
@@ -317,7 +342,10 @@ export function InventoryItem({
       </div>
 
       {/* Actions */}
-      <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-start" }}>
+      <div
+        className="pii-disable"
+        style={{ display: "flex", gap: "0.5rem", alignItems: "flex-start" }}
+      >
         <button
           onClick={onView}
           style={{

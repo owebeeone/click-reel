@@ -39,6 +39,7 @@ export function InventoryList({
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<SortField>("date");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [editingReelId, setEditingReelId] = useState<string | null>(null);
 
   // Filter and sort reels
   const filteredAndSortedReels = useMemo(() => {
@@ -233,6 +234,9 @@ export function InventoryList({
               onExport={(format) => onExportReel?.(reel.id, format)}
               onDelete={() => onDeleteReel?.(reel.id)}
               isExporting={exportingReelId === reel.id}
+              isEditing={editingReelId === reel.id}
+              onEditStart={() => setEditingReelId(reel.id)}
+              onEditEnd={() => setEditingReelId(null)}
             />
           ))}
         </div>
