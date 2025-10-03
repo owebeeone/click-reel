@@ -42,9 +42,13 @@ export function useClickCapture(options: ClickCaptureOptions): void {
       // Call the capture callback
       onCapture(event);
 
-      // Prevent default to avoid unwanted interactions during capture
-      // But allow the event to propagate for normal app behavior
+      // Prevent default to stop any default browser behavior
+      event.preventDefault();
+
+      // Stop propagation to prevent the click from triggering other handlers
+      // This prevents modals from closing when clicking while armed
       event.stopPropagation();
+      event.stopImmediatePropagation();
     };
 
     // Store the handler ref for cleanup

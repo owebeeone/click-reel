@@ -62,24 +62,18 @@ export async function captureFrame(
       ...options.markerStyle,
     };
 
-    // When capturing documentElement with a scroll transform, position marker
-    // in the absolute page coordinates (viewport + scroll)
-    let markerCoords = relativeCoords;
-    if (root === document.documentElement) {
-      // The capture will apply transform: translate(-scrollX, -scrollY)
-      // So we need to position the marker at viewport + scroll
-      // to compensate for the transform
-      markerCoords = {
-        x: viewportCoords.x + scrollPosition.x,
-        y: viewportCoords.y + scrollPosition.y,
-      };
-    }
+    // With scroll transform applied (and counter-transform on fixed elements),
+    // position marker at viewport + scroll coordinates
+    const markerCoords = {
+      x: viewportCoords.x + scrollPosition.x,
+      y: viewportCoords.y + scrollPosition.y,
+    };
 
     console.log("Marker positioning:", {
       viewportCoords,
       scrollPosition,
       markerCoords,
-      willApplyTransform: root === document.documentElement,
+      withTransform: true,
     });
 
     markerElement = createMarkerElement(
@@ -164,6 +158,26 @@ async function captureToDataURL(
       scrollHeight: element.scrollHeight,
     });
 
+    // DEBUG: Check for img elements in the DOM
+    const allImages = element.querySelectorAll("img");
+    console.log("📸 Found", allImages.length, "img elements before capture");
+    allImages.forEach((img, idx) => {
+      const imgEl = img as HTMLImageElement;
+      console.log(`  Image ${idx}:`, {
+        src: imgEl.src.substring(0, 100),
+        width: imgEl.offsetWidth,
+        height: imgEl.offsetHeight,
+        display: window.getComputedStyle(imgEl).display,
+        visibility: window.getComputedStyle(imgEl).visibility,
+        opacity: window.getComputedStyle(imgEl).opacity,
+        zIndex: window.getComputedStyle(imgEl).zIndex,
+        position: window.getComputedStyle(imgEl).position,
+        complete: imgEl.complete,
+        naturalWidth: imgEl.naturalWidth,
+        naturalHeight: imgEl.naturalHeight,
+      });
+    });
+
     // Find and hide all excluded elements using visibility (preserves layout)
     const excludedNodeList = element.querySelectorAll(
       "[data-screenshot-exclude]"
@@ -216,9 +230,20 @@ async function captureToDataURL(
       backgroundColor, // Add background color to prevent transparency
       filter: (node: HTMLElement) => {
         // Additional filter to exclude elements with data-screenshot-exclude
-        return (
-          !node.hasAttribute || !node.hasAttribute("data-screenshot-exclude")
-        );
+        const shouldExclude =
+          node.hasAttribute && node.hasAttribute("data-screenshot-exclude");
+
+        // DEBUG: Log img elements that are being filtered
+        if (node.tagName === "IMG") {
+          console.log(`  🔍 Filter checking IMG:`, {
+            src: (node as HTMLImageElement).src.substring(0, 100),
+            excluded: shouldExclude,
+            width: node.offsetWidth,
+            height: node.offsetHeight,
+          });
+        }
+
+        return !shouldExclude;
       },
     };
 
@@ -235,23 +260,67 @@ async function captureToDataURL(
       captureOptions.height = window.innerHeight;
     }
 
-    // Use style to offset the viewport capture
-    // This shifts the rendering to show the currently scrolled content
+    // Apply scroll transform to capture scrolled content
+    // BUT we need to counter-transform fixed-position elements to keep them in place
     const styleTransform = {
       transform: `translate(${-currentScrollX}px, ${-currentScrollY}px)`,
       transformOrigin: "top left",
     };
     captureOptions.style = styleTransform;
 
-    console.log("Capture options with scroll offset:", {
-      width: captureOptions.width,
-      height: captureOptions.height,
-      scrollX: currentScrollX,
-      scrollY: currentScrollY,
-      transform: styleTransform.transform,
+    // Find all fixed-position elements and temporarily adjust them
+    const fixedElements: Array<{
+      el: HTMLElement;
+      originalTransform: string;
+    }> = [];
+
+    const allElements = element.querySelectorAll("*");
+    allElements.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      const style = window.getComputedStyle(htmlEl);
+      if (style.position === "fixed") {
+        fixedElements.push({
+          el: htmlEl,
+          originalTransform: htmlEl.style.transform,
+        });
+        // Counter the document transform with an inverse transform
+        const currentTransform = htmlEl.style.transform || "";
+        const counterTransform = `translate(${currentScrollX}px, ${currentScrollY}px)`;
+        htmlEl.style.transform = currentTransform
+          ? `${currentTransform} ${counterTransform}`
+          : counterTransform;
+      }
     });
 
+    console.log(
+      "Capture options with scroll offset and fixed element compensation:",
+      {
+        width: captureOptions.width,
+        height: captureOptions.height,
+        scrollX: currentScrollX,
+        scrollY: currentScrollY,
+        fixedElementsFound: fixedElements.length,
+      }
+    );
+
+    // Force a reflow to ensure transform changes are applied
+    if (fixedElements.length > 0) {
+      void element.offsetHeight;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    console.log("🎬 Starting html-to-image capture...");
     const dataUrl = await htmlToImage.toPng(element, captureOptions);
+
+    // Restore fixed elements immediately
+    fixedElements.forEach(({ el, originalTransform }) => {
+      if (originalTransform) {
+        el.style.transform = originalTransform;
+      } else {
+        el.style.removeProperty("transform");
+      }
+    });
+    console.log("✅ Capture complete, data URL length:", dataUrl.length);
 
     // Immediately restore excluded elements
     excludedElements.forEach(({ el, originalDisplay }) => {
@@ -337,6 +406,34 @@ export async function captureToBlob(
     const currentScrollX = window.scrollX || window.pageXOffset;
     const currentScrollY = window.scrollY || window.pageYOffset;
 
+    // Find and counter-transform fixed-position elements
+    const fixedElements: Array<{
+      el: HTMLElement;
+      originalTransform: string;
+    }> = [];
+
+    const allElements = element.querySelectorAll("*");
+    allElements.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      const style = window.getComputedStyle(htmlEl);
+      if (style.position === "fixed") {
+        fixedElements.push({
+          el: htmlEl,
+          originalTransform: htmlEl.style.transform,
+        });
+        const currentTransform = htmlEl.style.transform || "";
+        const counterTransform = `translate(${currentScrollX}px, ${currentScrollY}px)`;
+        htmlEl.style.transform = currentTransform
+          ? `${currentTransform} ${counterTransform}`
+          : counterTransform;
+      }
+    });
+
+    // Immediate capture - no delay to reduce flashing
+    if (fixedElements.length > 0) {
+      void element.offsetHeight;
+    }
+
     const blob = await htmlToImage.toBlob(element, {
       quality: 0.95,
       pixelRatio: options.scale || 2,
@@ -348,6 +445,15 @@ export async function captureToBlob(
         transform: `translate(${-currentScrollX}px, ${-currentScrollY}px)`,
         transformOrigin: "top left",
       },
+    });
+
+    // Restore fixed elements
+    fixedElements.forEach(({ el, originalTransform }) => {
+      if (originalTransform) {
+        el.style.transform = originalTransform;
+      } else {
+        el.style.removeProperty("transform");
+      }
     });
 
     if (!blob) {

@@ -21,6 +21,7 @@ export { ReelPlayer } from "./react/components/ReelPlayer";
 export { DeleteConfirmDialog } from "./react/components/DeleteConfirmDialog";
 export { EmptyState } from "./react/components/EmptyState";
 export { MarkerDebugDialog } from "./react/components/MarkerDebugDialog";
+export { CaptureDebugDialog } from "./react/components/CaptureDebugDialog";
 
 // Export React hooks
 export { useRecorder } from "./react/hooks/useRecorder";

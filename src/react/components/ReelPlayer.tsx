@@ -12,7 +12,9 @@ import {
   Download,
   ChevronLeft,
   ChevronRight,
+  Bug,
 } from "lucide-react";
+import { CaptureDebugDialog } from "./CaptureDebugDialog";
 
 /**
  * Frame format for the ReelPlayer
@@ -60,8 +62,8 @@ export function ReelPlayer({
   const [currentFrame, setCurrentFrame] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showMetadata, setShowMetadata] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
   const intervalRef = useRef<number | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Stop playback when closing
   useEffect(() => {
@@ -96,23 +98,7 @@ export function ReelPlayer({
     };
   }, [isPlaying, frames.length, fps]);
 
-  // Render current frame to canvas
-  useEffect(() => {
-    if (!canvasRef.current || frames.length === 0) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const frame = frames[currentFrame];
-    const img = new Image();
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
-    };
-    img.src = frame.dataUrl;
-  }, [currentFrame, frames]);
+  // No need for canvas - we'll use img directly for better capture compatibility
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -206,37 +192,60 @@ export function ReelPlayer({
           <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 600 }}>
             {title}
           </h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-              padding: "4px",
-              display: "flex",
-              alignItems: "center",
-              color: "#64748b",
-            }}
-            title="Close (Esc)"
-          >
-            <X size={20} />
-          </button>
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <button
+              onClick={() => setShowDiagnostics(true)}
+              style={{
+                background: "#f59e0b",
+                border: "none",
+                cursor: "pointer",
+                padding: "6px 12px",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                color: "white",
+                borderRadius: "6px",
+                fontSize: "14px",
+                fontWeight: 600,
+              }}
+              title="Open Capture Diagnostics"
+            >
+              <Bug size={16} />
+              Diagnostics
+            </button>
+            <button
+              onClick={onClose}
+              style={{
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px",
+                display: "flex",
+                alignItems: "center",
+                color: "#64748b",
+              }}
+              title="Close (Esc)"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
-        {/* Canvas viewer */}
+        {/* Image viewer */}
         <div
           style={{
             flex: 1,
             overflow: "auto",
-            background: "#0f172a",
+            background: "#f1f5f9", // Light gray for better contrast with captured images
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             position: "relative",
           }}
         >
-          <canvas
-            ref={canvasRef}
+          <img
+            src={currentFrameData.dataUrl}
+            alt={`Frame ${currentFrame + 1}`}
             style={{
               maxWidth: "100%",
               maxHeight: "100%",
@@ -523,6 +532,12 @@ export function ReelPlayer({
           </div>
         </div>
       </div>
+
+      {/* Diagnostics Dialog */}
+      <CaptureDebugDialog
+        isOpen={showDiagnostics}
+        onClose={() => setShowDiagnostics(false)}
+      />
     </div>
   );
 }

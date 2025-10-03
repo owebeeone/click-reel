@@ -8,6 +8,7 @@ import {
   ClickReelRecorder,
   ClickReelInventory,
   MarkerDebugDialog,
+  CaptureDebugDialog,
   useRecorder,
   useStorage,
   useClickReelContext,
@@ -31,6 +32,7 @@ function DemoContent({
   const [recorderVisible, setRecorderVisible] = useState(true);
   const [obfuscationEnabled, setObfuscationEnabled] = useState(false);
   const [showDebugDialog, setShowDebugDialog] = useState(false);
+  const [showCaptureDebug, setShowCaptureDebug] = useState(false);
 
   // Set up keyboard shortcuts
   useKeyboardShortcuts({
@@ -655,7 +657,34 @@ function DemoContent({
         </section>
       )}
 
-      {/* Debug Dialog */}
+      {/* Capture Diagnostics */}
+      <section style={{ marginTop: "2rem" }}>
+        <button
+          onClick={() => setShowCaptureDebug(true)}
+          style={{
+            padding: "12px 24px",
+            background: "#f59e0b",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontSize: "16px",
+            fontWeight: 600,
+          }}
+        >
+          🔍 Open Capture Diagnostics
+        </button>
+        <p style={{ fontSize: "14px", color: "#666", marginTop: "0.5rem" }}>
+          Run diagnostics to see DOM state, timing, and visibility during
+          capture
+        </p>
+      </section>
+
+      {/* Debug Dialogs */}
+      <CaptureDebugDialog
+        isOpen={showCaptureDebug}
+        onClose={() => setShowCaptureDebug(false)}
+      />
       {recorder.currentReel && recorder.currentReel.frames.length > 0 && (
         <MarkerDebugDialog
           isOpen={showDebugDialog}
