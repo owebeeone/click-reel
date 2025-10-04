@@ -31,7 +31,8 @@ export async function captureFrame(
   options: CaptureOptions,
   reelId: string,
   order: number,
-  captureType: "pre-click" | "post-click" = "pre-click"
+  captureType: "pre-click" | "post-click" = "pre-click",
+  skipObfuscation: boolean = false
 ): Promise<Frame> {
   const frameId = nanoid();
   const timestamp = Date.now();
@@ -92,7 +93,7 @@ export async function captureFrame(
 
   try {
     // Capture the image (captureToDataURL handles hiding excluded elements)
-    const dataUrl = await captureToDataURL(root, options);
+    const dataUrl = await captureToDataURL(root, options, skipObfuscation);
 
     // Clean up marker
     if (markerElement && root.contains(markerElement)) {
@@ -150,7 +151,8 @@ async function finishFrame(
  */
 async function captureToDataURL(
   element: HTMLElement,
-  options: CaptureOptions
+  options: CaptureOptions,
+  skipObfuscation: boolean = false
 ): Promise<string> {
   // Temporarily hide excluded elements during capture
   const excludedElements: Array<{ el: HTMLElement; originalDisplay: string }> =
@@ -208,7 +210,8 @@ async function captureToDataURL(
     }
 
     // Apply obfuscation if enabled (in-place, non-destructive)
-    if (options.obfuscationEnabled) {
+    // Skip obfuscation for settlement detection to avoid flashing and false changes
+    if (options.obfuscationEnabled && !skipObfuscation) {
       console.log("🔒 Obfuscation enabled, temporarily replacing text...");
       obfuscationBackup = obfuscateInPlace(element, DEFAULT_OBFUSCATION_CONFIG);
 

@@ -447,13 +447,15 @@ export function useRecorder(): RecorderAPI {
       while (Date.now() - startTime < maxCaptureDuration) {
         try {
           // Capture post-click frame (no marker)
+          // Skip obfuscation for settlement detection to avoid flashing and layout changes
           const postFrame = await captureFrame(
             root,
             originalEvent,
             options,
             reelId,
             frameOrder++,
-            "post-click"
+            "post-click",
+            true // Skip obfuscation during settlement detection
           );
 
           // Check if settled (two consecutive identical frames)
