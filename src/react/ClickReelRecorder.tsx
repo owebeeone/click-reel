@@ -140,12 +140,19 @@ export function ClickReelRecorder({
             padding: "12px 16px",
             background: "rgba(255, 255, 255, 0.05)",
             borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-            cursor: "grab",
           }}
-          {...listeners}
-          {...attributes}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              cursor: "grab",
+              flex: 1,
+            }}
+            {...listeners}
+            {...attributes}
+          >
             <GripVertical size={16} color="#94a3b8" />
             <span
               style={{
@@ -161,6 +168,8 @@ export function ClickReelRecorder({
             <button
               onClick={(e) => {
                 e.stopPropagation();
+                e.preventDefault();
+                console.log("🔘 Minimize button clicked!");
                 handleToggleCollapse();
               }}
               style={{
@@ -171,6 +180,8 @@ export function ClickReelRecorder({
                 padding: "4px",
                 display: "flex",
                 alignItems: "center",
+                position: "relative",
+                zIndex: 10,
               }}
               aria-label="Minimize"
               title="Minimize recorder"
