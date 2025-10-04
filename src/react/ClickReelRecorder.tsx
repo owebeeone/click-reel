@@ -16,11 +16,13 @@ import {
   GripVertical,
   Minimize2,
   Maximize2,
+  Eye,
   EyeOff,
   Library,
 } from "lucide-react";
 import { useRecorder } from "./hooks/useRecorder";
 import { useClickReelContext } from "./context/ClickReelContext";
+import { ActionType } from "../types";
 
 export interface ClickReelRecorderProps {
   /** The root element to capture */
@@ -51,7 +53,7 @@ export function ClickReelRecorder({
   onSettingsClick,
 }: ClickReelRecorderProps) {
   const recorder = useRecorder();
-  const { state } = useClickReelContext();
+  const { state, dispatch } = useClickReelContext();
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
 
   const handleToggleCollapse = () => {
@@ -250,30 +252,47 @@ export function ClickReelRecorder({
               <span style={{ color: "#e2e8f0", fontSize: "13px" }}>
                 {getStatusText()}
               </span>
-              {state.ui?.obfuscationActive && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    padding: "2px 6px",
-                    background: "#8b5cf6",
-                    borderRadius: "4px",
-                  }}
-                  title="Obfuscation enabled - personal data will be hidden"
-                >
+              <button
+                onClick={() => {
+                  dispatch({ type: ActionType.TOGGLE_OBFUSCATION });
+                  console.log(
+                    `Toggled obfuscation to: ${!state.ui?.obfuscationActive}`
+                  );
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  padding: "2px 6px",
+                  background: state.ui?.obfuscationActive
+                    ? "#8b5cf6"
+                    : "#64748b",
+                  borderRadius: "4px",
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                }}
+                title={
+                  state.ui?.obfuscationActive
+                    ? "Obfuscation enabled - Click to disable"
+                    : "Obfuscation disabled - Click to enable"
+                }
+              >
+                {state.ui?.obfuscationActive ? (
                   <EyeOff size={12} color="white" />
-                  <span
-                    style={{
-                      color: "white",
-                      fontSize: "10px",
-                      fontWeight: 600,
-                    }}
-                  >
-                    PRIVATE
-                  </span>
-                </div>
-              )}
+                ) : (
+                  <Eye size={12} color="white" />
+                )}
+                <span
+                  style={{
+                    color: "white",
+                    fontSize: "10px",
+                    fontWeight: 600,
+                  }}
+                >
+                  {state.ui?.obfuscationActive ? "PRIVATE" : "PUBLIC"}
+                </span>
+              </button>
               {recorder.currentReel && (
                 <span
                   style={{

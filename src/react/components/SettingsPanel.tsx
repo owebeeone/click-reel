@@ -71,11 +71,13 @@ export function SettingsPanel({
   const handleSave = () => {
     onSave(localPreferences);
     setHasChanges(false);
+    onClose();
   };
 
   const handleReset = () => {
     onReset();
     setHasChanges(false);
+    onClose();
   };
 
   if (!isOpen) return null;

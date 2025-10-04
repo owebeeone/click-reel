@@ -778,7 +778,23 @@ function DemoContent({
         onClose={() => setShowSettings(false)}
         preferences={preferences}
         onSave={(newPrefs) => {
+          // Check if obfuscation setting changed
+          const obfuscationChanged =
+            newPrefs.obfuscationEnabled !== preferences.obfuscationEnabled;
+
           savePreferences(newPrefs);
+
+          // Sync runtime state if obfuscation changed
+          if (
+            obfuscationChanged &&
+            newPrefs.obfuscationEnabled !== state.ui?.obfuscationActive
+          ) {
+            dispatch({ type: "TOGGLE_OBFUSCATION" as any });
+            console.log(
+              `📍 Syncing obfuscation to ${newPrefs.obfuscationEnabled} (from settings save)`
+            );
+          }
+
           toast.success("Settings saved!", { duration: 3000 });
         }}
         onReset={() => {
