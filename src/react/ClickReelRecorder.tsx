@@ -3,7 +3,7 @@
  * Draggable recorder with control buttons and status indicators
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -55,6 +55,11 @@ export function ClickReelRecorder({
   const recorder = useRecorder();
   const { state, dispatch } = useClickReelContext();
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
+
+  // Sync collapsed state with initialCollapsed prop changes
+  useEffect(() => {
+    setIsCollapsed(initialCollapsed);
+  }, [initialCollapsed]);
 
   const handleToggleCollapse = () => {
     const newCollapsed = !isCollapsed;
@@ -154,7 +159,10 @@ export function ClickReelRecorder({
           </div>
           {!isCollapsed && (
             <button
-              onClick={handleToggleCollapse}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleCollapse();
+              }}
               style={{
                 background: "transparent",
                 border: "none",
@@ -165,58 +173,205 @@ export function ClickReelRecorder({
                 alignItems: "center",
               }}
               aria-label="Minimize"
+              title="Minimize recorder"
             >
               <Minimize2 size={16} />
             </button>
           )}
         </div>
 
-        {/* Collapsed/Minimized View - button-only mode */}
+        {/* Collapsed/Minimized View - icon-only controls */}
         {isCollapsed && (
           <div
             style={{
-              padding: "12px 16px",
+              padding: "8px",
               display: "flex",
-              gap: "8px",
+              gap: "4px",
+              flexWrap: "nowrap",
               alignItems: "center",
             }}
           >
-            {/* Status indicator dot */}
-            <div
-              style={{
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                background: getStatusColor(),
-                boxShadow: `0 0 8px ${getStatusColor()}`,
-                animation:
-                  recorder.state === "armed"
-                    ? "pulse 1.5s ease-in-out infinite"
-                    : "none",
+            {/* Start/Stop Recording */}
+            <button
+              onClick={() => {
+                if (recorder.state === "idle") {
+                  recorder.startRecording();
+                } else {
+                  recorder.stopRecording();
+                }
               }}
-              title={getStatusText()}
-            />
+              disabled={recorder.state === "armed"}
+              style={{
+                padding: "8px",
+                background:
+                  recorder.state === "recording"
+                    ? "#ef4444"
+                    : recorder.state === "armed"
+                      ? "#94a3b8"
+                      : "#22c55e",
+                border: "none",
+                borderRadius: "6px",
+                cursor: recorder.state === "armed" ? "not-allowed" : "pointer",
+                color: "white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: recorder.state === "armed" ? 0.5 : 1,
+              }}
+              title={
+                recorder.state === "recording"
+                  ? "Stop Recording (Ctrl+Shift+S)"
+                  : "Start Recording (Ctrl+Shift+S)"
+              }
+            >
+              {recorder.state === "recording" ? (
+                <Square size={16} fill="white" />
+              ) : (
+                <Circle size={16} />
+              )}
+            </button>
+
+            {/* Arm/Disarm Capture */}
+            <button
+              onClick={() => {
+                if (recorder.state === "armed") {
+                  recorder.disarm();
+                } else {
+                  recorder.arm();
+                }
+              }}
+              disabled={recorder.state === "idle"}
+              style={{
+                padding: "8px",
+                background:
+                  recorder.state === "armed"
+                    ? "#f59e0b"
+                    : recorder.state === "idle"
+                      ? "#e2e8f0"
+                      : "#64748b",
+                border: "none",
+                borderRadius: "6px",
+                cursor: recorder.state === "idle" ? "not-allowed" : "pointer",
+                color: "white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: recorder.state === "idle" ? 0.5 : 1,
+              }}
+              title={
+                recorder.state === "armed"
+                  ? "Disarm (Ctrl+Shift+A)"
+                  : "Arm Capture (Ctrl+Shift+A)"
+              }
+            >
+              <Target size={16} />
+            </button>
+
+            {/* Add Frame */}
+            <button
+              onClick={() => recorder.addFrame()}
+              disabled={recorder.state === "idle"}
+              style={{
+                padding: "8px",
+                background: recorder.state === "idle" ? "#e2e8f0" : "#64748b",
+                border: "none",
+                borderRadius: "6px",
+                cursor: recorder.state === "idle" ? "not-allowed" : "pointer",
+                color: "white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: recorder.state === "idle" ? 0.5 : 1,
+              }}
+              title="Add Frame (Ctrl+Shift+F)"
+            >
+              <Plus size={16} />
+            </button>
+
+            {/* Obfuscation Toggle */}
+            <button
+              onClick={() => {
+                dispatch({ type: ActionType.TOGGLE_OBFUSCATION });
+              }}
+              style={{
+                padding: "8px",
+                background: state.ui?.obfuscationActive ? "#8b5cf6" : "#64748b",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                color: "white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              title={
+                state.ui?.obfuscationActive
+                  ? "Disable Obfuscation"
+                  : "Enable Obfuscation"
+              }
+            >
+              {state.ui?.obfuscationActive ? (
+                <EyeOff size={16} />
+              ) : (
+                <Eye size={16} />
+              )}
+            </button>
+
+            {/* Settings */}
+            <button
+              onClick={onSettingsClick}
+              style={{
+                padding: "8px",
+                background: "#64748b",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                color: "white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              title="Settings (Ctrl+Shift+G)"
+            >
+              <Settings size={16} />
+            </button>
+
+            {/* Inventory */}
+            <button
+              onClick={onInventoryClick}
+              style={{
+                padding: "8px",
+                background: "#64748b",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                color: "white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              title="Inventory (Ctrl+Shift+E)"
+            >
+              <Library size={16} />
+            </button>
 
             {/* Expand button */}
             <button
               onClick={handleToggleCollapse}
               style={{
+                padding: "8px",
                 background: "#3b82f6",
                 border: "none",
-                color: "white",
-                cursor: "pointer",
-                padding: "6px 12px",
                 borderRadius: "6px",
+                cursor: "pointer",
+                color: "white",
                 display: "flex",
                 alignItems: "center",
-                gap: "4px",
-                fontSize: "12px",
-                fontWeight: 600,
+                justifyContent: "center",
               }}
-              title="Expand recorder"
+              title="Expand Recorder"
             >
-              <Maximize2 size={14} />
-              Expand
+              <Maximize2 size={16} />
             </button>
           </div>
         )}

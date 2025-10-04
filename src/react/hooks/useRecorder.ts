@@ -218,6 +218,16 @@ export function useRecorder(): RecorderAPI {
   const stopRecording = useCallback(async () => {
     if (!state.currentReel) return;
 
+    // Don't save recordings with zero frames
+    if (state.currentReel.frames.length === 0) {
+      console.log("⚠️ Skipping save: recording has no frames");
+      dispatch({
+        type: ActionType.COMPLETE_RECORDING,
+        payload: { reelId: state.currentReel.id },
+      });
+      return;
+    }
+
     try {
       dispatch({
         type: ActionType.SET_LOADING,

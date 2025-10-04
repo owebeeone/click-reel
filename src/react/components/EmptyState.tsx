@@ -133,10 +133,67 @@ export function EmptyState({ onStartRecording }: EmptyStateProps) {
         </button>
       )}
 
-      {/* Tips */}
+      {/* Keyboard Shortcuts */}
       <div
         style={{
           marginTop: "3rem",
+          padding: "1.5rem",
+          background: "#f8fafc",
+          borderRadius: "8px",
+          maxWidth: "600px",
+          width: "100%",
+          border: "1px solid #e2e8f0",
+        }}
+      >
+        <h3
+          style={{
+            margin: "0 0 1rem 0",
+            fontSize: "14px",
+            fontWeight: 600,
+            color: "#1e293b",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+          }}
+        >
+          ⌨️ Keyboard Shortcuts
+        </h3>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "auto 1fr",
+            gap: "0.75rem",
+            fontSize: "14px",
+          }}
+        >
+          <kbd style={kbdStyle}>Ctrl+Shift+R</kbd>
+          <span style={{ color: "#64748b" }}>Toggle recorder visibility</span>
+
+          <kbd style={kbdStyle}>Ctrl+Shift+S</kbd>
+          <span style={{ color: "#64748b" }}>Start/stop recording</span>
+
+          <kbd style={kbdStyle}>Ctrl+Shift+A</kbd>
+          <span style={{ color: "#64748b" }}>
+            Arm capture (click to capture)
+          </span>
+
+          <kbd style={kbdStyle}>Ctrl+Shift+F</kbd>
+          <span style={{ color: "#64748b" }}>Add frame manually</span>
+
+          <kbd style={kbdStyle}>Ctrl+Shift+O</kbd>
+          <span style={{ color: "#64748b" }}>Toggle obfuscation</span>
+
+          <kbd style={kbdStyle}>Ctrl+Shift+G</kbd>
+          <span style={{ color: "#64748b" }}>Open settings</span>
+
+          <kbd style={kbdStyle}>Ctrl+Shift+E</kbd>
+          <span style={{ color: "#64748b" }}>Open inventory</span>
+        </div>
+      </div>
+
+      {/* Tips */}
+      <div
+        style={{
+          marginTop: "2rem",
           padding: "1.5rem",
           background: "#f8fafc",
           borderRadius: "8px",
@@ -165,16 +222,13 @@ export function EmptyState({ onStartRecording }: EmptyStateProps) {
           }}
         >
           <li>
-            Use <kbd style={kbdStyle}>Ctrl+Shift+R</kbd> to hide the recorder
-            from screenshots
-          </li>
-          <li>
             Position the recorder in a corner that won't interfere with your
             demo
           </li>
           <li>Click "Add Frame" to manually capture the current state</li>
           <li>Review frames before exporting to ensure quality</li>
           <li>Export to APNG for better quality than GIF</li>
+          <li>Enable obfuscation to hide sensitive personal information</li>
         </ul>
       </div>
     </div>
