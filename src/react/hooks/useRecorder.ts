@@ -192,10 +192,7 @@ export function useRecorder(): RecorderAPI {
         payload: updatedReel,
       });
 
-      dispatch({
-        type: ActionType.ADD_FRAME,
-        payload: { reelId: state.currentReel.id, frame: frame },
-      });
+      // Note: No need to dispatch ADD_FRAME here - frame is already in updatedReel
     } catch (error) {
       console.error("Failed to capture frame:", error);
       dispatch({
@@ -375,10 +372,7 @@ export function useRecorder(): RecorderAPI {
           payload: updatedReel,
         });
 
-        dispatch({
-          type: ActionType.ADD_FRAME,
-          payload: { reelId: state.currentReel.id, frame: preClickFrame },
-        });
+        // Note: No need to dispatch ADD_FRAME here - frame is already in updatedReel
 
         console.log(
           `📊 Current frame count after pre-click: ${updatedReel.frames.length}`
