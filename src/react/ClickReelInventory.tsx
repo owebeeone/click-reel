@@ -62,6 +62,7 @@ export function ClickReelInventory({
   );
   const [viewingReelTitle, setViewingReelTitle] = useState("");
   const [deletingReel, setDeletingReel] = useState<ReelSummary | null>(null);
+  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
   const [exportingReelId, setExportingReelId] = useState<string | null>(null);
 
   // Load reels on mount
@@ -191,6 +192,23 @@ export function ClickReelInventory({
     }
   };
 
+  const handleDeleteAll = async () => {
+    if (!storage || reels.length === 0) return;
+
+    try {
+      // Delete all reels
+      await Promise.all(reels.map((reel) => storage.deleteReel(reel.id)));
+      setReels([]);
+      setShowDeleteAllConfirm(false);
+      console.log(`✅ Deleted all ${reels.length} reels`);
+    } catch (error) {
+      console.error("❌ Failed to delete all reels:", error);
+      alert(
+        `Failed to delete all reels: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
+  };
+
   const handleClosePlayer = () => {
     setViewingReelId(null);
     setViewingReelFrames([]);
@@ -208,16 +226,49 @@ export function ClickReelInventory({
         padding: "2rem",
       }}
     >
-      <h1
+      <div
         style={{
-          margin: "0 0 2rem 0",
-          fontSize: "32px",
-          fontWeight: 700,
-          color: "#1e293b",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "2rem",
         }}
       >
-        Click Reel Inventory
-      </h1>
+        <h1
+          style={{
+            margin: 0,
+            fontSize: "32px",
+            fontWeight: 700,
+            color: "#1e293b",
+          }}
+        >
+          Click Reel Inventory
+        </h1>
+        {reels.length > 0 && (
+          <button
+            onClick={() => setShowDeleteAllConfirm(true)}
+            style={{
+              padding: "8px 16px",
+              background: "#ef4444",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              fontSize: "14px",
+              fontWeight: 500,
+              cursor: "pointer",
+              transition: "background 0.2s",
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = "#dc2626";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = "#ef4444";
+            }}
+          >
+            Remove All
+          </button>
+        )}
+      </div>
 
       {reels.length === 0 && !loading ? (
         <EmptyState onStartRecording={onStartRecording} />
@@ -259,6 +310,94 @@ export function ClickReelInventory({
           reelTitle={deletingReel.title}
           frameCount={deletingReel.frameCount}
         />
+      )}
+
+      {/* Delete All Confirmation Dialog */}
+      {showDeleteAllConfirm && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+          }}
+          onClick={() => setShowDeleteAllConfirm(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "8px",
+              padding: "2rem",
+              maxWidth: "400px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              style={{
+                margin: "0 0 1rem 0",
+                fontSize: "20px",
+                fontWeight: 600,
+                color: "#1e293b",
+              }}
+            >
+              Delete All Reels?
+            </h2>
+            <p
+              style={{
+                margin: "0 0 1.5rem 0",
+                color: "#64748b",
+                fontSize: "14px",
+                lineHeight: 1.5,
+              }}
+            >
+              Are you sure you want to delete all{" "}
+              <strong>{reels.length}</strong> saved reel
+              {reels.length !== 1 ? "s" : ""}? This action cannot be undone.
+            </p>
+            <div
+              style={{
+                display: "flex",
+                gap: "0.75rem",
+                justifyContent: "flex-end",
+              }}
+            >
+              <button
+                onClick={() => setShowDeleteAllConfirm(false)}
+                style={{
+                  padding: "8px 16px",
+                  background: "#f1f5f9",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#475569",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAll}
+                style={{
+                  padding: "8px 16px",
+                  background: "#ef4444",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "white",
+                  cursor: "pointer",
+                }}
+              >
+                Delete All
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Export modal */}
