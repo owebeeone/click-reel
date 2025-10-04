@@ -84,6 +84,7 @@ export function SettingsPanel({
 
   return (
     <div
+      className="pii-disable"
       style={{
         position: "fixed",
         inset: 0,

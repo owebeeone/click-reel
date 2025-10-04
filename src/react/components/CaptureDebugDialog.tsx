@@ -186,6 +186,7 @@ export function CaptureDebugDialog({
 
   return (
     <div
+      className="pii-disable"
       style={{
         position: "fixed",
         inset: 0,

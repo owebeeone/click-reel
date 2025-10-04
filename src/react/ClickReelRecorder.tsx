@@ -119,6 +119,7 @@ export function ClickReelRecorder({
       style={style}
       data-screenshot-exclude="true"
       data-testid="click-reel-recorder"
+      className="pii-disable"
     >
       <div
         style={{

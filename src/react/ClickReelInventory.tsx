@@ -315,6 +315,7 @@ export function ClickReelInventory({
       {/* Delete All Confirmation Dialog */}
       {showDeleteAllConfirm && (
         <div
+          className="pii-disable"
           style={{
             position: "fixed",
             inset: 0,
@@ -403,6 +404,7 @@ export function ClickReelInventory({
       {/* Export modal */}
       {exportingReelId && (
         <div
+          className="pii-disable"
           style={{
             position: "fixed",
             top: "50%",

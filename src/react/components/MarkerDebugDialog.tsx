@@ -103,6 +103,7 @@ export function MarkerDebugDialog({
 
   return (
     <div
+      className="pii-disable"
       style={{
         position: "fixed",
         inset: 0,
@@ -217,9 +218,9 @@ export function MarkerDebugDialog({
               color: "#475569",
             }}
           >
-            <strong>Instructions:</strong> Click on the image where you originally
-            clicked (where the marker should appear). The green circle shows your
-            click.
+            <strong>Instructions:</strong> Click on the image where you
+            originally clicked (where the marker should appear). The green
+            circle shows your click.
           </div>
         </div>
 
