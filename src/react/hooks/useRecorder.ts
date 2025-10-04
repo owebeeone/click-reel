@@ -194,7 +194,7 @@ export function useRecorder(): RecorderAPI {
 
       dispatch({
         type: ActionType.ADD_FRAME,
-        payload: { reelId: state.currentReel.id, frameId: frame.id },
+        payload: { reelId: state.currentReel.id, frame: frame },
       });
     } catch (error) {
       console.error("Failed to capture frame:", error);
@@ -362,6 +362,8 @@ export function useRecorder(): RecorderAPI {
           "pre-click"
         );
 
+        console.log(`✅ Pre-click frame captured: ${preClickFrame.id}`);
+
         // Add pre-click frame to reel
         let updatedReel = {
           ...state.currentReel,
@@ -375,12 +377,13 @@ export function useRecorder(): RecorderAPI {
 
         dispatch({
           type: ActionType.ADD_FRAME,
-          payload: { reelId: state.currentReel.id, frameId: preClickFrame.id },
+          payload: { reelId: state.currentReel.id, frame: preClickFrame },
         });
 
         console.log(
-          "Pre-click frame captured, starting post-click sequence..."
+          `📊 Current frame count after pre-click: ${updatedReel.frames.length}`
         );
+        console.log("⏳ Starting post-click sequence...");
 
         // Schedule POST-CLICK frames to capture animation settling
         await schedulePostClickCaptures(
@@ -389,6 +392,10 @@ export function useRecorder(): RecorderAPI {
           captureOptions,
           state.currentReel.id,
           updatedReel.frames.length
+        );
+
+        console.log(
+          `✅ Post-click sequence complete. Final frame count should be visible in state.`
         );
 
         // Automatically disarm after capture sequence completes
@@ -430,84 +437,128 @@ export function useRecorder(): RecorderAPI {
       const maxCaptureDuration =
         state.currentReel?.settings.maxCaptureDuration || 4000;
 
-      console.log("Post-click capture settings:", {
+      console.log("📋 Post-click capture settings:", {
         postClickDelay,
         postClickInterval,
         maxCaptureDuration,
+        startingFrameOrder: startOrder,
       });
 
       // Wait for initial delay
+      console.log(
+        `⏱️ Waiting ${postClickDelay}ms before first post-click capture...`
+      );
       await new Promise((resolve) => setTimeout(resolve, postClickDelay));
 
       const startTime = Date.now();
       let previousImageData: string | Blob | null = null;
       let consecutiveIdenticalFrames = 0;
       let frameOrder = startOrder;
+      let totalPostClickFrames = 0;
 
       while (Date.now() - startTime < maxCaptureDuration) {
         try {
           // Capture post-click frame (no marker)
           // Skip obfuscation for settlement detection to avoid flashing and layout changes
-          const postFrame = await captureFrame(
+          console.log(
+            `📸 Capturing settlement detection frame #${totalPostClickFrames + 1}...`
+          );
+          const detectionFrame = await captureFrame(
             root,
             originalEvent,
             options,
             reelId,
-            frameOrder++,
+            frameOrder, // Don't increment yet - final frame will use this order
             "post-click",
             true // Skip obfuscation during settlement detection
           );
 
+          console.log(`✅ Detection frame captured: ${detectionFrame.id}`);
+          totalPostClickFrames++;
+
           // Check if settled (two consecutive identical frames)
           // Compare by string representation (data URL or blob URL)
           const currentImageData =
-            typeof postFrame.image === "string"
-              ? postFrame.image
-              : postFrame.image.toString();
+            typeof detectionFrame.image === "string"
+              ? detectionFrame.image
+              : detectionFrame.image.toString();
           const prevImageData =
             typeof previousImageData === "string"
               ? previousImageData
               : previousImageData?.toString();
 
+          const imageDataLength = currentImageData?.length || 0;
+          console.log(`🔍 Image data length: ${imageDataLength} chars`);
+
           if (prevImageData && currentImageData === prevImageData) {
             consecutiveIdenticalFrames++;
             console.log(
-              `Consecutive identical frames: ${consecutiveIdenticalFrames}`
+              `🔄 Consecutive identical frames: ${consecutiveIdenticalFrames}`
             );
 
             if (consecutiveIdenticalFrames >= 1) {
-              console.log("Animation settled, stopping post-click capture");
+              // Page has settled! Now capture the final frame WITH obfuscation if enabled
+              console.log(
+                `✅ Animation settled! Capturing final frame with obfuscation...`
+              );
+
+              const finalFrame = await captureFrame(
+                root,
+                originalEvent,
+                options,
+                reelId,
+                frameOrder, // Use same order as last detection frame
+                "post-click",
+                false // Enable obfuscation for final frame
+              );
+
+              // Add ONLY the final settled frame to reel
+              dispatch({
+                type: ActionType.ADD_FRAME,
+                payload: { reelId, frame: finalFrame },
+              });
+
+              console.log(
+                `✅ Final settled frame added: ${finalFrame.id}. Total detection frames: ${totalPostClickFrames}`
+              );
               break;
             }
           } else {
+            if (prevImageData) {
+              console.log(`🔄 Frame changed, resetting consecutive count`);
+            }
             consecutiveIdenticalFrames = 0;
           }
 
-          previousImageData = postFrame.image;
+          previousImageData = detectionFrame.image;
 
-          // Add frame to reel
-          dispatch({
-            type: ActionType.ADD_FRAME,
-            payload: { reelId, frameId: postFrame.id },
-          });
-
-          console.log(`Post-click frame ${frameOrder - startOrder} captured`);
+          // DON'T add intermediate detection frames to reel - only use them for comparison
+          console.log(
+            `📊 Detection frame ${totalPostClickFrames} compared (not added to reel)`
+          );
 
           // Wait for next interval
+          console.log(
+            `⏱️ Waiting ${postClickInterval}ms before next capture...`
+          );
           await new Promise((resolve) =>
             setTimeout(resolve, postClickInterval)
           );
         } catch (error) {
-          console.error("Post-click frame capture failed:", error);
+          console.error("❌ Post-click frame capture failed:", error);
           break;
         }
       }
 
       if (Date.now() - startTime >= maxCaptureDuration) {
         console.log(
-          "Max capture duration reached, stopping post-click capture"
+          `⏱️ Max capture duration reached (${maxCaptureDuration}ms), stopping post-click capture. Total frames: ${totalPostClickFrames}`
         );
       }
+
+      console.log(
+        `📊 Post-click sequence finished. Total post-click frames captured: ${totalPostClickFrames}`
+      );
     },
     [dispatch, state.currentReel]
   );

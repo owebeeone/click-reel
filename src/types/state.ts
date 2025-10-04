@@ -114,7 +114,10 @@ export type Action =
   | { type: ActionType.START_RECORDING; payload: Reel }
   | { type: ActionType.ARM }
   | { type: ActionType.DISARM }
-  | { type: ActionType.ADD_FRAME; payload: { reelId: string; frameId: string } }
+  | {
+      type: ActionType.ADD_FRAME;
+      payload: { reelId: string; frame: import("./reel").Frame };
+    }
   | { type: ActionType.COMPLETE_RECORDING; payload: { reelId: string } }
   | { type: ActionType.STOP_RECORDING }
   | { type: ActionType.LOAD_INVENTORY; payload: ReelSummary[] }

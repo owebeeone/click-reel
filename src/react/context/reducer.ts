@@ -83,8 +83,19 @@ export function clickReelReducer(
       };
 
     case ActionType.ADD_FRAME:
-      // Frame is already added to the reel in storage
-      return state;
+      // Add frame to current reel
+      if (!state.currentReel) {
+        console.warn("ADD_FRAME: No current reel");
+        return state;
+      }
+
+      return {
+        ...state,
+        currentReel: {
+          ...state.currentReel,
+          frames: [...state.currentReel.frames, action.payload.frame],
+        },
+      };
 
     case ActionType.COMPLETE_RECORDING:
       return {
