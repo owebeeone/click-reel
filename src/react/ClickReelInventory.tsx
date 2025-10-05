@@ -10,7 +10,7 @@ import { EmptyState } from "./components/EmptyState";
 import { useStorage } from "./hooks/useStorage";
 import { useClickReelContext } from "./context/ClickReelContext";
 import { StorageService } from "../core/storage";
-import { exportReel } from "../core/export";
+import { exportReel, downloadBlob } from "../core/export";
 import type { ReelSummary, Frame } from "../types";
 
 export interface ClickReelInventoryProps {
@@ -148,13 +148,17 @@ export function ClickReelInventory({
         throw new Error("Reel not found");
       }
 
-      await exportReel(reel, {
+      const result = await exportReel(reel, {
         format,
         filename: reel.title,
-        onProgress: (progress) => {
-          console.log(`Export progress: ${Math.round(progress * 100)}%`);
+        onProgress: (current, total, message) => {
+          const percent = Math.round((current / total) * 100);
+          console.log(`Export progress: ${percent}% - ${message || ""}`);
         },
       });
+
+      // Download the file
+      downloadBlob(result.blob, result.filename);
 
       console.log(`✅ Exported ${reel.title} as ${format.toUpperCase()}`);
     } catch (error) {

@@ -6,7 +6,7 @@ import { GIFEncoder, quantize, applyPalette } from "gifenc";
 import UPNG from "upng-js";
 import type { Frame, GIFOptions, APNGOptions } from "../types";
 import { extractImageData, resizeImage } from "../utils/image-utils";
-import { DEFAULT_GIF_OPTIONS, DEFAULT_APNG_OPTIONS } from "../utils/constants";
+import { DEFAULT_GIF_OPTIONS } from "../utils/constants";
 
 /**
  * Progress callback for encoding operations
@@ -98,7 +98,7 @@ export async function encodeGIF(
  */
 export async function encodeAPNG(
   frames: Frame[],
-  options: APNGOptions = {},
+  _options: APNGOptions = {}, // Prefix with _ to indicate intentionally unused
   onProgress?: ProgressCallback
 ): Promise<Blob> {
   if (frames.length === 0) {
@@ -106,11 +106,6 @@ export async function encodeAPNG(
   }
 
   onProgress?.(0, frames.length, "Initializing APNG encoder...");
-
-  const config = {
-    ...DEFAULT_APNG_OPTIONS,
-    ...options,
-  };
 
   // Prepare frame data
   const frameBuffers: ArrayBuffer[] = [];
@@ -144,11 +139,16 @@ export async function encodeAPNG(
   const { width, height } = firstImageData;
 
   // Encode to APNG
+  // UPNG.encode(imgs, w, h, cnum, [dels])
+  // imgs: array of RGBA buffers
+  // w, h: width and height
+  // cnum: color depth (0 = all colors, 256 = 256 colors)
+  // dels: array of delays in milliseconds
   const apngBuffer = UPNG.encode(
     frameBuffers,
     width,
     height,
-    config.compressionLevel || 0,
+    0, // 0 = use all colors (full color depth)
     delays
   );
 
