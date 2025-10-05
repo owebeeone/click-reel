@@ -19,10 +19,17 @@ import {
   Eye,
   EyeOff,
   Library,
+  TestTube2,
 } from "lucide-react";
 import { useRecorder } from "./hooks/useRecorder";
 import { useClickReelContext } from "./context/ClickReelContext";
 import { ActionType } from "../types";
+import {
+  obfuscateInPlace,
+  restoreObfuscation,
+  DEFAULT_OBFUSCATION_CONFIG,
+  type ObfuscationBackup,
+} from "../utils/obfuscation";
 
 export interface ClickReelRecorderProps {
   /** The root element to capture */
@@ -55,6 +62,11 @@ export function ClickReelRecorder({
   const recorder = useRecorder();
   const { state, dispatch } = useClickReelContext();
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
+
+  // Obfuscation preview state (debug tool)
+  const [isObfuscating, setIsObfuscating] = useState(false);
+  const [obfuscationBackup, setObfuscationBackup] =
+    useState<ObfuscationBackup | null>(null);
 
   // Sync collapsed state with initialCollapsed prop changes
   useEffect(() => {
@@ -649,6 +661,69 @@ export function ClickReelRecorder({
               >
                 <Plus size={16} />
                 Frame
+              </button>
+
+              {/* Preview Obfuscation (Debug Tool) */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+
+                  if (isObfuscating) {
+                    // Restore original content
+                    if (obfuscationBackup) {
+                      restoreObfuscation(obfuscationBackup);
+                      setObfuscationBackup(null);
+                    }
+                    setIsObfuscating(false);
+                    console.log("🔓 Obfuscation preview disabled");
+                  } else {
+                    // Apply obfuscation to live page
+                    const backup = obfuscateInPlace(
+                      document.documentElement,
+                      DEFAULT_OBFUSCATION_CONFIG
+                    );
+                    setObfuscationBackup(backup);
+                    setIsObfuscating(true);
+                    console.log("🔒 Obfuscation preview enabled");
+                  }
+                }}
+                style={{
+                  padding: "10px",
+                  background: isObfuscating
+                    ? "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)"
+                    : "#334155",
+                  color: "white",
+                  border: isObfuscating ? "2px solid #a78bfa" : "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  transition: "all 0.2s",
+                  gridColumn: "span 2",
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = isObfuscating
+                    ? "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)"
+                    : "#1e293b";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = isObfuscating
+                    ? "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)"
+                    : "#334155";
+                }}
+                title={
+                  isObfuscating
+                    ? "Click to restore original view"
+                    : "Preview obfuscation (Debug tool)"
+                }
+              >
+                <TestTube2 size={16} />
+                {isObfuscating ? "Restore" : "Preview PII"}
               </button>
 
               {/* Export */}

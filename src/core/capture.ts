@@ -243,8 +243,8 @@ async function captureToDataURL(
 
     // Add marker AFTER obfuscation using recalculated position
     let markerElement: HTMLElement | null = null;
-    if (markerInfo && !skipObfuscation) {
-      // Get element's NEW position after obfuscation
+    if (markerInfo) {
+      // Get element's NEW position after obfuscation (if obfuscation was applied)
       const rectAfter = markerInfo.targetElement.getBoundingClientRect();
 
       // Calculate marker position: element's new position + original relative offset + scroll
@@ -259,12 +259,18 @@ async function captureToDataURL(
           markerInfo.scrollPosition.y,
       };
 
-      console.log("📍 Adding marker AFTER obfuscation:", {
+      console.log("📍 Adding marker:", {
+        skipObfuscation,
+        obfuscationEnabled: options.obfuscationEnabled,
         originalViewportCoords: markerInfo.viewportCoords,
         elementRectAfter: { left: rectAfter.left, top: rectAfter.top },
         relativeOffset: markerInfo.relativeOffset,
         recalculatedMarkerCoords: markerCoords,
         scroll: markerInfo.scrollPosition,
+        expectedFinalPosition: {
+          x: markerCoords.x - markerInfo.scrollPosition.x,
+          y: markerCoords.y - markerInfo.scrollPosition.y,
+        },
       });
 
       markerElement = createMarkerElement(
