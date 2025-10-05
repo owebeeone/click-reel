@@ -1,4 +1,4 @@
-# click-reel
+# @owebeeone/click-reel
 
 A browser-side interaction recorder that captures annotated screenshots of user interactions and assembles them into animated GIF/APNG files with metadata.
 
@@ -28,7 +28,7 @@ The library is now feature-complete with all core functionality implemented! Cur
 ## Installation
 
 ```bash
-npm install click-reel
+npm install @owebeeone/click-reel
 ```
 
 > **Note**: Library is under active development. Installation will be available after Phase 14 (npm publish).
@@ -36,7 +36,7 @@ npm install click-reel
 ## Quick Start
 
 ```tsx
-import { ClickReelProvider, ClickReelRecorder, ClickReelInventory } from 'click-reel';
+import { ClickReelProvider, ClickReelRecorder, ClickReelInventory } from '@owebeeone/click-reel';
 
 function App() {
   return (
