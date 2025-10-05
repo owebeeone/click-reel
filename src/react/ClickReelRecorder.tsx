@@ -341,6 +341,53 @@ export function ClickReelRecorder({
               )}
             </button>
 
+            {/* Preview PII (Debug Tool) */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+
+                if (isObfuscating) {
+                  // Restore original content
+                  if (obfuscationBackup) {
+                    restoreObfuscation(obfuscationBackup);
+                    setObfuscationBackup(null);
+                  }
+                  setIsObfuscating(false);
+                  console.log("🔓 Obfuscation preview disabled");
+                } else {
+                  // Apply obfuscation to live page
+                  const backup = obfuscateInPlace(
+                    document.documentElement,
+                    DEFAULT_OBFUSCATION_CONFIG
+                  );
+                  setObfuscationBackup(backup);
+                  setIsObfuscating(true);
+                  console.log("🔒 Obfuscation preview enabled");
+                }
+              }}
+              style={{
+                padding: "8px",
+                background: isObfuscating
+                  ? "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)"
+                  : "#64748b",
+                border: isObfuscating ? "2px solid #a78bfa" : "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                color: "white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              title={
+                isObfuscating
+                  ? "Restore original view"
+                  : "Preview obfuscation (Debug tool)"
+              }
+            >
+              <TestTube2 size={16} />
+            </button>
+
             {/* Settings */}
             <button
               onClick={onSettingsClick}
