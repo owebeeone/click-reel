@@ -13,6 +13,7 @@ export { ClickReelProvider } from "./react/ClickReelProvider";
 export { ClickReelRecorder } from "./react/ClickReelRecorder";
 export { ClickReelInventory } from "./react/ClickReelInventory";
 export { ClickReelSettings } from "./react/ClickReelSettings";
+export { ClickReelComplete } from "./react/ClickReelComplete";
 
 // Export inventory components
 export { InventoryList } from "./react/components/InventoryList";

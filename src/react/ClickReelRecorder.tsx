@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useRecorder } from "./hooks/useRecorder";
 import { useClickReelContext } from "./context/ClickReelContext";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { ActionType } from "../types";
 import {
   obfuscateInPlace,
@@ -53,7 +54,7 @@ export interface ClickReelRecorderProps {
  */
 export function ClickReelRecorder({
   position = { x: window.innerWidth - 280, y: 20 },
-  visible = true,
+  visible: visibleProp,
   initialCollapsed = false,
   onCollapsedChange,
   onInventoryClick,
@@ -62,6 +63,10 @@ export function ClickReelRecorder({
   const recorder = useRecorder();
   const { state, dispatch } = useClickReelContext();
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
+
+  // Use context state for visibility if no prop is provided
+  const visible =
+    visibleProp !== undefined ? visibleProp : state.ui.recorderVisible;
 
   // Obfuscation preview state (debug tool)
   const [isObfuscating, setIsObfuscating] = useState(false);
@@ -72,6 +77,54 @@ export function ClickReelRecorder({
   useEffect(() => {
     setIsCollapsed(initialCollapsed);
   }, [initialCollapsed]);
+
+  // Setup keyboard shortcuts
+  useKeyboardShortcuts(
+    {
+      onToggleRecorder: () => {
+        dispatch({
+          type: ActionType.TOGGLE_RECORDER_UI,
+        });
+      },
+      onToggleObfuscation: () => {
+        dispatch({
+          type: ActionType.UPDATE_PREFERENCES,
+          payload: {
+            obfuscationEnabled: !state.preferences.obfuscationEnabled,
+          },
+        });
+      },
+      onStartRecording: () => {
+        if (recorder.state === "idle") {
+          recorder.startRecording();
+        }
+      },
+      onStopRecording: () => {
+        if (recorder.state === "recording") {
+          recorder.stopRecording();
+        }
+      },
+      onArmCapture: () => {
+        if (recorder.state === "recording") {
+          recorder.arm();
+        }
+      },
+      onAddFrame: () => {
+        if (recorder.state === "recording") {
+          recorder.addFrame();
+        }
+      },
+      onToggleSettings: () => {
+        dispatch({ type: ActionType.TOGGLE_SETTINGS });
+        onSettingsClick?.();
+      },
+      onToggleInventory: () => {
+        dispatch({ type: ActionType.TOGGLE_INVENTORY });
+        onInventoryClick?.();
+      },
+    },
+    state.preferences.keyboardShortcuts
+  );
 
   const handleToggleCollapse = () => {
     const newCollapsed = !isCollapsed;
@@ -162,16 +215,23 @@ export function ClickReelRecorder({
               gap: "8px",
               cursor: "grab",
               flex: 1,
+              userSelect: "none",
+              WebkitUserSelect: "none",
             }}
             {...listeners}
             {...attributes}
           >
-            <GripVertical size={16} color="#94a3b8" />
+            <GripVertical
+              size={16}
+              color="#94a3b8"
+              style={{ pointerEvents: "none" }}
+            />
             <span
               style={{
                 color: "#f1f5f9",
                 fontSize: "14px",
                 fontWeight: 600,
+                pointerEvents: "none",
               }}
             >
               Click Reel
@@ -390,7 +450,10 @@ export function ClickReelRecorder({
 
             {/* Settings */}
             <button
-              onClick={onSettingsClick}
+              onClick={() => {
+                dispatch({ type: ActionType.TOGGLE_SETTINGS });
+                onSettingsClick?.();
+              }}
               style={{
                 padding: "8px",
                 background: "#64748b",
@@ -409,7 +472,10 @@ export function ClickReelRecorder({
 
             {/* Inventory */}
             <button
-              onClick={onInventoryClick}
+              onClick={() => {
+                dispatch({ type: ActionType.TOGGLE_INVENTORY });
+                onInventoryClick?.();
+              }}
               style={{
                 padding: "8px",
                 background: "#64748b",
@@ -828,7 +894,10 @@ export function ClickReelRecorder({
 
               {/* Inventory */}
               <button
-                onClick={onInventoryClick}
+                onClick={() => {
+                  dispatch({ type: ActionType.TOGGLE_INVENTORY });
+                  onInventoryClick?.();
+                }}
                 style={{
                   padding: "10px",
                   background: "transparent",
@@ -862,7 +931,10 @@ export function ClickReelRecorder({
 
               {/* Settings */}
               <button
-                onClick={onSettingsClick}
+                onClick={() => {
+                  dispatch({ type: ActionType.TOGGLE_SETTINGS });
+                  onSettingsClick?.();
+                }}
                 style={{
                   padding: "10px",
                   background: "transparent",

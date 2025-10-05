@@ -15,11 +15,20 @@ export default defineConfig({
     },
     rollupOptions: {
       // Externalize dependencies that shouldn't be bundled
-      external: ["react", "react-dom"],
+      external: [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "@dnd-kit/core",
+        "@dnd-kit/utilities",
+      ],
       output: {
         globals: {
           react: "React",
           "react-dom": "ReactDOM",
+          "react/jsx-runtime": "react/jsx-runtime",
+          "@dnd-kit/core": "DndKit",
+          "@dnd-kit/utilities": "DndKitUtilities",
         },
       },
     },

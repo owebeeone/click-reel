@@ -1,6 +1,8 @@
 # @owebeeone/click-reel
 
-A browser-side interaction recorder that captures annotated screenshots of user interactions and assembles them into animated GIF/APNG files with metadata.
+**Browser-side interaction recorder with 2-line integration** 
+
+Capture annotated screenshots of user interactions and export as GIF, APNG, or ZIP bundles. Includes draggable UI, PII obfuscation, and full keyboard control.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
 [![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -37,20 +39,98 @@ npm install @owebeeone/click-reel
 
 ## Quick Start
 
+### Step 1: Install Dependencies
+
+```bash
+npm install @owebeeone/click-reel @dnd-kit/core @dnd-kit/utilities
+```
+
+### Step 2: Add to Your App
+
 ```tsx
-import { ClickReelProvider, ClickReelRecorder, ClickReelInventory } from '@owebeeone/click-reel';
+import { ClickReelProvider, ClickReelComplete } from '@owebeeone/click-reel';
+
+function App() {
+  return (
+    <ClickReelProvider>
+      <YourApp />
+      <ClickReelComplete />
+    </ClickReelProvider>
+  );
+}
+```
+
+**That's it!** ✨ 
+
+This single component gives you everything:
+- 🎯 **Draggable recorder** - Move it anywhere, position persists across reloads
+- ⚙️ **Settings panel** - Customize timings, markers, and behavior
+- 📚 **Inventory** - Manage and export saved recordings
+- 🔒 **Privacy mode** - Built-in PII obfuscation
+- ⌨️ **Keyboard shortcuts** - Control everything without the mouse
+- 🪟 **Smart positioning** - Auto-adjusts when window resizes, never goes off-screen
+
+### Optional: Customize
+
+```tsx
+<ClickReelComplete 
+  initialPosition={{ x: 100, y: 100 }}  // Custom starting position
+  startMinimized={true}                 // Start collapsed
+  showOnStartup={false}                 // Hidden until Ctrl+Shift+R
+/>
+```
+
+---
+
+### When NOT to Use `<ClickReelComplete />`
+
+**99% of users should use `<ClickReelComplete />`.** Only use alternatives if:
+
+1. **You don't want `@dnd-kit` dependencies** → Use [Basic Integration](#alternative-integrations) (fixed-position recorder)
+2. **You have a custom drag system** → Use [Manual Integration](#manual-integration-advanced) (full control)
+3. **You're building a custom recorder UI** → Use individual components
+
+<details>
+<summary><strong>Show alternative integration methods</strong></summary>
+
+<a name="alternative-integrations"></a>
+
+#### Comparison Table
+
+| Feature | **Complete** ⭐ | Basic | Manual |
+|---------|----------|-------|---------|
+| Recording & Playback | ✅ | ✅ | ✅ |
+| Settings & Inventory | ✅ | ❌ | ✅ |
+| **Draggable** | **✅** | ❌ | ✅ |
+| **Position Persistence** | **✅** | ❌ | ✅ |
+| **Auto Bounds Checking** | **✅** | ❌ | ✅ |
+| **Setup Lines** | **~5** | ~3 | ~60 |
+| **Dependencies** | `@dnd-kit/*` | None extra | `@dnd-kit/*` |
+
+#### Basic Integration (No Dragging)
+
+Minimal setup with no extra dependencies:
+
+```tsx
+import { ClickReelProvider, ClickReelRecorder } from '@owebeeone/click-reel';
 
 function App() {
   return (
     <ClickReelProvider>
       <YourApp />
       <ClickReelRecorder />
-      {/* Optional: Add inventory viewer */}
-      <ClickReelInventory />
     </ClickReelProvider>
   );
 }
 ```
+
+**Limitations:** Fixed position (top-right), no settings panel, no inventory.
+
+#### Manual Integration
+
+For advanced control, see [Manual Integration](#manual-integration) section below.
+
+</details>
 
 ### Keyboard Shortcuts (Default)
 
@@ -84,6 +164,271 @@ Mark sensitive content with CSS classes:
   <input type="text" value="john@example.com" /> <!-- Will be obfuscated -->
 </div>
 ```
+
+## Manual Integration (Advanced)
+
+> ⚠️ **Advanced Users Only** - Most users should use [`<ClickReelComplete />`](#quick-start) instead. This section is for edge cases where you need full control over drag behavior, position management, or custom recorder UI.
+
+### When You Need Manual Integration
+
+**Only use this if:**
+- ✅ You have an existing custom drag-and-drop system and can't use `@dnd-kit`
+- ✅ You need to integrate recorder position with external state management
+- ✅ You're building a custom recorder UI from scratch
+
+**If you just want to customize the recorder's behavior, use `<ClickReelComplete />` props instead!**
+
+### Common Pitfalls
+
+If you proceed with manual integration, watch out for:
+
+⚠️ **Forgetting peer dependencies** - Requires `@dnd-kit/core` and `@dnd-kit/utilities`  
+⚠️ **Not wrapping with DndContext** - Recorder won't be draggable  
+⚠️ **React version conflicts** - Ensure only one React version (`npm list react`)  
+⚠️ **Missing position sanitization** - Users can drag recorder off-screen  
+⚠️ **No resize handling** - Recorder stays off-screen after window resize  
+
+### 1. Install Peer Dependencies
+
+Click Reel requires `@dnd-kit` for drag-and-drop functionality:
+
+```bash
+npm install @dnd-kit/core @dnd-kit/utilities
+```
+
+### 2. Wrap Your App with Providers
+
+```tsx
+import { ClickReelProvider, ClickReelRecorder, ClickReelSettings, ClickReelInventory } from '@owebeeone/click-reel';
+import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { useState, useEffect } from 'react';
+
+function App() {
+  // 1. Configure drag sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor)
+  );
+
+  // 2. Manage recorder position state
+  const [recorderPosition, setRecorderPosition] = useState(() => {
+    try {
+      const stored = localStorage.getItem('click-reel-position');
+      const position = stored
+        ? JSON.parse(stored)
+        : { x: window.innerWidth - 300, y: 20 };
+
+      // Sanitize the loaded position
+      return sanitizeRecorderPosition(position);
+    } catch {
+      return sanitizeRecorderPosition({ x: window.innerWidth - 300, y: 20 });
+    }
+  });
+
+  // 3. Handle window resize - reposition recorder if it's now off-screen
+  useEffect(() => {
+    const handleResize = () => {
+      setRecorderPosition((prev) => sanitizeRecorderPosition(prev));
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // 4. Handle drag end
+  const handleDragEnd = (event: any) => {
+    if (event.active.id === 'click-reel-recorder') {
+      const newPosition = sanitizeRecorderPosition({
+        x: recorderPosition.x + event.delta.x,
+        y: recorderPosition.y + event.delta.y,
+      });
+      setRecorderPosition(newPosition);
+      try {
+        localStorage.setItem('click-reel-position', JSON.stringify(newPosition));
+      } catch (err) {
+        console.warn('Failed to save recorder position:', err);
+      }
+    }
+  };
+
+  return (
+    <ClickReelProvider>
+      <YourApp />
+      
+      {/* Draggable recorder with DndContext */}
+      <DndContext 
+        sensors={sensors}
+        onDragEnd={handleDragEnd}
+      >
+        <ClickReelRecorder position={recorderPosition} />
+      </DndContext>
+      
+      {/* Settings and Inventory panels */}
+      <ClickReelSettings />
+      <ClickReelInventory />
+    </ClickReelProvider>
+  );
+}
+
+/**
+ * Sanitize recorder position to ensure it's within the viewport
+ */
+function sanitizeRecorderPosition(pos: { x: number; y: number }): {
+  x: number;
+  y: number;
+} {
+  const recorderWidth = 280; // Approximate width of the recorder
+  const recorderHeight = 400; // Approximate height of the recorder
+  const minMargin = 20; // Minimum margin from viewport edges
+
+  // Ensure position is within viewport bounds
+  const maxX = window.innerWidth - recorderWidth - minMargin;
+  const maxY = window.innerHeight - recorderHeight - minMargin;
+
+  return {
+    x: Math.max(minMargin, Math.min(pos.x, maxX)),
+    y: Math.max(minMargin, Math.min(pos.y, maxY)),
+  };
+}
+
+export default App;
+```
+
+### 3. Component Options
+
+#### ClickReelRecorder Props
+
+```tsx
+interface ClickReelRecorderProps {
+  /** Current position (controlled by parent for dragging) */
+  position?: { x: number; y: number };
+  /** Whether the recorder is visible */
+  visible?: boolean;
+  /** Initial collapsed state */
+  initialCollapsed?: boolean;
+  /** Callback when collapsed state changes */
+  onCollapsedChange?: (collapsed: boolean) => void;
+}
+```
+
+#### ClickReelInventory Props
+
+```tsx
+interface ClickReelInventoryProps {
+  /** Custom storage service (optional) */
+  storageService?: StorageService;
+  /** Callback when "Start Recording" is clicked */
+  onStartRecording?: () => void;
+  /** Additional CSS class name */
+  className?: string;
+  /** Additional inline styles */
+  style?: React.CSSProperties;
+}
+```
+
+### 4. Customization Examples
+
+#### Custom Initial Position
+
+```tsx
+<ClickReelRecorder position={{ x: 100, y: 100 }} />
+```
+
+#### Start Minimized
+
+```tsx
+<ClickReelRecorder initialCollapsed={true} />
+```
+
+#### Control Visibility Programmatically
+
+```tsx
+const [visible, setVisible] = useState(true);
+
+<ClickReelRecorder 
+  visible={visible}
+  position={recorderPosition}
+/>
+```
+
+#### Custom Recorder State Handler
+
+```tsx
+const handleCollapsedChange = (collapsed: boolean) => {
+  console.log('Recorder collapsed:', collapsed);
+  // Optionally save to localStorage or context
+};
+
+<ClickReelRecorder 
+  onCollapsedChange={handleCollapsedChange}
+  position={recorderPosition}
+/>
+```
+
+## Usage Workflows
+
+### Recording Interactions
+
+1. **Start Recording**: Click "Start Recording" or press `Ctrl+Shift+S`
+2. **Capture Interactions**: Choose one of two modes:
+   - **Arm Mode** (`Ctrl+Shift+A`): Click anywhere on the page to capture that interaction
+   - **Manual Mode** (`Ctrl+Shift+F`): Manually capture the current view
+3. **Stop Recording**: Click "Stop Recording" or press `Ctrl+Shift+S` again
+
+### Viewing Saved Recordings
+
+1. **Open Inventory**: Click the inventory icon or press `Ctrl+Shift+E`
+2. **Browse Recordings**: Scroll through your saved reels
+3. **Play Recording**: Click "Play" to view frame-by-frame playback
+4. **Export**: Choose GIF, APNG, or ZIP format
+
+### Managing Privacy
+
+1. **Enable Obfuscation**: Click the PII indicator on the recorder or press `Ctrl+Shift+O`
+2. **Mark Sensitive Areas**: Add `pii-enable` class to HTML elements
+3. **Preview**: Use the "Preview PII" button to see what will be obfuscated
+4. **Record**: All new captures will obfuscate marked content
+
+### Customizing Settings
+
+1. **Open Settings**: Click the settings icon or press `Ctrl+Shift+G`
+2. **Adjust Capture Timings**: Configure post-click delays and settlement detection
+3. **Marker Style**: Customize size and color of click markers
+4. **Recorder UI**: Configure startup behavior and visibility preferences
+5. **Save**: Click "Save" to persist your preferences
+
+### Exporting Recordings
+
+#### As Animated Files
+
+1. Select a recording from inventory
+2. Click "Export as GIF" or "Export as APNG"
+3. Wait for encoding (progress bar shows status)
+4. File downloads automatically
+
+#### As ZIP Bundle
+
+1. Select a recording from inventory
+2. Click "Export as ZIP"
+3. Bundle includes:
+   - Animated GIF and APNG
+   - Individual PNG frames (`pngs/` folder)
+   - Individual GIF frames (`gifs/` folder)
+   - Metadata JSON
+   - Standalone HTML viewer
+
+### Keyboard Shortcuts Reference
+
+| Action | Shortcut | Available When |
+|--------|----------|----------------|
+| Toggle Recorder | `Ctrl+Shift+R` | Always |
+| Start/Stop Recording | `Ctrl+Shift+S` | Recorder visible |
+| Arm Capture | `Ctrl+Shift+A` | Recording active |
+| Add Frame | `Ctrl+Shift+F` | Recording active |
+| Toggle Obfuscation | `Ctrl+Shift+O` | Recorder visible |
+| Open Settings | `Ctrl+Shift+G` | Recorder visible |
+| Open Inventory | `Ctrl+Shift+E` | Recorder visible |
+
+> **Note**: These shortcuts work cross-platform with `Ctrl+Shift` on both macOS and Windows/Linux.
 
 ## Development
 
@@ -132,38 +477,99 @@ click-reel/
 └── docs/             # Documentation (to be created)
 ```
 
-## Implementation Roadmap
+## Advanced Integration
 
-See [CLICK-REEL-PLAN.md](./CLICK-REEL-PLAN.md) for the complete 14-phase implementation plan.
+### Vite Configuration
 
-### Completed Phases
+If you're using Vite and integrating a local development version of Click Reel, ensure React is deduplicated:
 
-- ✅ **Phase 0** - Project Setup & Infrastructure
-- ✅ **Phase 1** - Core Capture Engine (DOM-to-image, markers, scroll handling)
-- ✅ **Phase 2** - Event Management (post-click scheduling, settled detection, keyboard shortcuts)
-- ✅ **Phase 3** - Encoding Services (GIF, APNG, ZIP export)
-- ✅ **Phase 4** - Storage System (IndexedDB with idb)
-- ✅ **Phase 5** - Inventory Viewer (browse, search, sort saved reels)
-- ✅ **Phase 6** - Export Functionality (download with progress indicators)
-- ✅ **Phase 7** - Recorder UI (draggable, minimizable, visibility toggle)
-- ✅ **Phase 8** - Playback UI (frame-by-frame viewer with metadata)
-- ✅ **Phase 9** - Settings Panel (preferences, logarithmic sliders, persistence)
-- ✅ **Phase 10** - HTML Obfuscation (PII protection with class-based control)
+```ts
+// vite.config.ts
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
-### Current Phase
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    dedupe: ['react', 'react-dom']
+  },
+  optimizeDeps: {
+    exclude: ['@owebeeone/click-reel']
+  }
+})
+```
 
-- 🚧 **Phase 11** - Integration & Polish (error handling, loading states, UX refinements)
+### TypeScript Configuration
 
-### Upcoming Phases
+Add the library types to your `tsconfig.json`:
 
-- 🔜 **Phase 12** - Documentation & Examples
-- 🔜 **Phase 13** - Testing Suite (unit, integration, E2E)
-- 🔜 **Phase 14** - npm Publication & Distribution
+```json
+{
+  "compilerOptions": {
+    "types": ["@owebeeone/click-reel"]
+  }
+}
+```
+
+### Troubleshooting
+
+#### Recorder Not Draggable
+
+**Problem:** The recorder panel appears but won't drag.
+
+**Solution:** Ensure you've:
+1. Installed `@dnd-kit/core` and `@dnd-kit/utilities`
+2. Wrapped `<ClickReelRecorder>` with `<DndContext>`
+3. Configured `PointerSensor` correctly
+4. Passed the `position` prop to `<ClickReelRecorder>`
+
+#### React Context Errors
+
+**Problem:** `TypeError: Cannot read properties of undefined (reading 'ReactCurrentDispatcher')`
+
+**Solution:** This indicates React version conflicts. Make sure:
+- `@dnd-kit` packages are **peer dependencies** (not bundled)
+- Your Vite config deduplicates React (see [Vite Configuration](#vite-configuration))
+- All React packages use the same version (check with `npm list react`)
+
+#### Keyboard Shortcuts Not Working
+
+**Problem:** Pressing keyboard shortcuts has no effect.
+
+**Solution:** Check that:
+- `<ClickReelProvider>` wraps your entire app
+- The keyboard shortcuts don't conflict with browser shortcuts
+- The recorder is visible (hidden recorders don't respond to shortcuts except `Ctrl+Shift+R`)
+
+#### Position Not Persisting
+
+**Problem:** Recorder position resets after page reload.
+
+**Solution:** Ensure:
+- The `handleDragEnd` function saves to `localStorage`
+- `localStorage` is available (not disabled in browser settings)
+- The position is loaded and sanitized on mount
+
+#### Recorder Off-Screen After Window Resize
+
+**Problem:** After resizing the browser window, the recorder is partially or fully off-screen.
+
+**Solution:** Add a window resize listener that calls `sanitizeRecorderPosition()`:
+
+```tsx
+useEffect(() => {
+  const handleResize = () => {
+    setRecorderPosition((prev) => sanitizeRecorderPosition(prev));
+  };
+  window.addEventListener("resize", handleResize);
+  return () => window.removeEventListener("resize", handleResize);
+}, []);
+```
 
 ## Technology Stack
 
 - **TypeScript 5.9** - Type-safe development
-- **React 19** - UI components and hooks
+- **React 18/19** - UI components and hooks (supports both versions)
 - **html-to-image** - DOM-to-canvas rasterization
 - **gifenc** - High-performance GIF encoding
 - **upng-js** - APNG encoding
@@ -197,10 +603,12 @@ For detailed feature specifications, see [CLICK-REEL-SPEC.md](./CLICK-REEL-SPEC.
 
 ### Core Components
 
-- `<ClickReelProvider>` - Context provider for global state
-- `<ClickReelRecorder>` - Main recorder UI with controls
-- `<ClickReelInventory>` - Saved reels browser and manager
-- `<SettingsPanel>` - User preferences configuration
+- `<ClickReelProvider>` - Context provider for global state (required)
+- **`<ClickReelComplete>`** ⭐ - All-in-one component with full functionality (recommended)
+- `<ClickReelRecorder>` - Main recorder UI with controls (for manual integration)
+- `<ClickReelInventory>` - Saved reels browser and manager (for manual integration)
+- `<ClickReelSettings>` - Settings panel wrapper (for manual integration)
+- `<SettingsPanel>` - User preferences configuration (internal component)
 
 ### Hooks
 
@@ -244,8 +652,4 @@ recording-YYYY-MM-DD_HH_MM_SS.zip
 - **Metadata** for programmatic access to recording details
 - **HTML viewer** for standalone playback
 
----
 
-**Current Version:** 0.0.1 (Development)  
-**Status:** Phase 11 - Integration & Polish 🚧  
-**Last Updated:** October 5, 2025
