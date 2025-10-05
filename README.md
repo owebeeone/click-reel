@@ -2,6 +2,10 @@
 
 **Browser-side interaction recorder with 2-line integration** 
 
+
+[![GitHub Repo](https://img.shields.io/badge/Repo-owebeeone%2Fclick--reel-181717?logo=github)](https://github.com/owebeeone/click-reel)
+
+
 Capture annotated screenshots of user interactions and export as GIF, APNG, or ZIP bundles. Includes draggable UI, PII obfuscation, and full keyboard control.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
