@@ -2,75 +2,91 @@
  * Click Reel Demo Application
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   ClickReelProvider,
-  ClickReelRecorder,
-  ClickReelInventory,
-  SettingsPanel,
+  ClickReelComplete,
   useRecorder,
   useStorage,
   useClickReelContext,
-  usePreferences,
-  type ExportFormat,
 } from "../src";
-import { useKeyboardShortcuts } from "../src/react/hooks/useKeyboardShortcuts";
-import { DndContext } from "@dnd-kit/core";
 import toast, { Toaster } from "react-hot-toast";
 import "./index.css";
 
-function DemoContent({
-  recorderPosition,
-}: {
-  recorderPosition: { x: number; y: number };
-}) {
-  const [exportFormat, setExportFormat] = useState<ExportFormat>("gif");
-  const { state, dispatch } = useClickReelContext();
+function DemoContent() {
+  const { state } = useClickReelContext();
   const recorder = useRecorder();
   const storage = useStorage();
   const [storageInfo, setStorageInfo] = useState<string>("");
-  const [showSettings, setShowSettings] = useState(false);
-  const [showInventory, setShowInventory] = useState(false);
   const [showTestDialog1, setShowTestDialog1] = useState(false);
   const [showTestDialog2, setShowTestDialog2] = useState(false);
   const [counterMs, setCounterMs] = useState(0);
+  const [exportFormat, setExportFormat] = useState<"gif" | "apng" | "zip">(
+    "gif"
+  );
 
-  // Diagnostic: Track dialog state changes
+  // Toast notifications for state changes
+  const prevRecorderVisible = useRef(state.ui.recorderVisible);
+  const prevObfuscation = useRef(state.preferences.obfuscationEnabled);
+  const prevSettingsVisible = useRef(state.ui.settingsVisible);
+  const prevInventoryVisible = useRef(state.ui.inventoryVisible);
+  const prevRecorderState = useRef(recorder.state);
+
   useEffect(() => {
-    console.log(
-      "🚪 [Dialog State] TestDialog1:",
-      showTestDialog1,
-      "TestDialog2:",
-      showTestDialog2,
-      "Recorder:",
-      recorder.state
-    );
-  }, [showTestDialog1, showTestDialog2, recorder.state]);
+    if (prevRecorderVisible.current !== state.ui.recorderVisible) {
+      toast.success(
+        `Recorder ${state.ui.recorderVisible ? "shown" : "hidden"}`,
+        { duration: 2000 }
+      );
+      prevRecorderVisible.current = state.ui.recorderVisible;
+    }
+  }, [state.ui.recorderVisible]);
 
-  // Preferences hook
-  const { preferences, savePreferences, resetToDefaults, isLoaded } =
-    usePreferences();
-
-  // Apply preferences to UI state on mount
   useEffect(() => {
-    if (!isLoaded) return;
-
-    // Apply showOnStartup preference
-    if (!preferences.recorderUI.showOnStartup && state.ui.recorderVisible) {
-      dispatch({ type: "TOGGLE_RECORDER_UI" as any });
-      console.log(
-        "📍 Hiding recorder on startup (showOnStartup preference is false)"
+    if (prevObfuscation.current !== state.preferences.obfuscationEnabled) {
+      toast.success(
+        `Obfuscation ${state.preferences.obfuscationEnabled ? "enabled" : "disabled"}`,
+        { duration: 2000 }
       );
+      prevObfuscation.current = state.preferences.obfuscationEnabled;
     }
+  }, [state.preferences.obfuscationEnabled]);
 
-    // Apply obfuscationEnabled preference to runtime state
-    if (preferences.obfuscationEnabled !== state.ui?.obfuscationActive) {
-      dispatch({ type: "TOGGLE_OBFUSCATION" as any });
-      console.log(
-        `📍 Setting obfuscation to ${preferences.obfuscationEnabled} (from preference)`
+  useEffect(() => {
+    if (prevSettingsVisible.current !== state.ui.settingsVisible) {
+      toast.success(
+        `Settings ${state.ui.settingsVisible ? "opened" : "closed"}`,
+        { duration: 2000 }
       );
+      prevSettingsVisible.current = state.ui.settingsVisible;
     }
-  }, [isLoaded]); // Run when preferences are loaded
+  }, [state.ui.settingsVisible]);
+
+  useEffect(() => {
+    if (prevInventoryVisible.current !== state.ui.inventoryVisible) {
+      toast.success(
+        `Inventory ${state.ui.inventoryVisible ? "opened" : "closed"}`,
+        { duration: 2000 }
+      );
+      prevInventoryVisible.current = state.ui.inventoryVisible;
+    }
+  }, [state.ui.inventoryVisible]);
+
+  useEffect(() => {
+    if (prevRecorderState.current !== recorder.state) {
+      if (recorder.state === "recording") {
+        toast.success("Recording started", { duration: 2000 });
+      } else if (
+        prevRecorderState.current === "recording" &&
+        recorder.state === "idle"
+      ) {
+        toast.success("Recording stopped", { duration: 2000 });
+      } else if (recorder.state === "armed") {
+        toast.success("Capture armed - click to capture", { duration: 2000 });
+      }
+      prevRecorderState.current = recorder.state;
+    }
+  }, [recorder.state]);
 
   // Counter for test dialog 2 - stops at 5 seconds
   useEffect(() => {
@@ -92,137 +108,10 @@ function DemoContent({
     return () => clearInterval(interval);
   }, [showTestDialog2]);
 
-  // Set up keyboard shortcuts
-  useKeyboardShortcuts({
-    onToggleRecorder: () => {
-      dispatch({ type: "TOGGLE_RECORDER_UI" as any });
-      console.log(
-        `Toggling recorder visibility to: ${!state.ui.recorderVisible}`
-      );
-      toast.success(
-        `Recorder ${!state.ui.recorderVisible ? "shown" : "hidden"}`,
-        {
-          duration: 2000,
-        }
-      );
-    },
-    onToggleObfuscation: () => {
-      dispatch({ type: "TOGGLE_OBFUSCATION" as any });
-      toast.success(
-        `Obfuscation ${!state.ui?.obfuscationActive ? "enabled" : "disabled"}`,
-        {
-          duration: 2000,
-        }
-      );
-    },
-    onToggleSettings: () => {
-      const newShowSettings = !showSettings;
-      setShowSettings(newShowSettings);
-      console.log(`Toggling settings to: ${newShowSettings}`);
-      toast.success(`Settings ${newShowSettings ? "opened" : "closed"}`, {
-        duration: 2000,
-      });
-    },
-    onToggleInventory: () => {
-      const newShowInventory = !showInventory;
-      setShowInventory(newShowInventory);
-      console.log(`Toggling inventory to: ${newShowInventory}`);
-      toast.success(`Inventory ${newShowInventory ? "opened" : "closed"}`, {
-        duration: 2000,
-      });
-    },
-    onStartRecording: () => {
-      // Ctrl+Shift+S now toggles start/stop
-      if (recorder.state === "idle") {
-        handleStartRecording();
-      } else if (recorder.state === "recording" || recorder.state === "armed") {
-        handleStopRecording();
-      }
-    },
-    onStopRecording: () => {
-      // Kept for backward compatibility but unused - startRecording now handles toggle
-    },
-    onArmCapture: () => {
-      if (recorder.state === "recording") {
-        recorder.arm();
-      }
-    },
-    onAddFrame: () => {
-      if (recorder.state === "recording") {
-        handleAddFrame();
-      }
-    },
-  });
-
-  const handleStartRecording = async () => {
-    try {
-      await recorder.startRecording();
-      toast.success(
-        "Recording started! Click 'Add Frame' or 'Arm' to capture clicks.",
-        { duration: 5000 }
-      );
-    } catch (error) {
-      toast.error(
-        `Failed to start recording: ${error instanceof Error ? error.message : String(error)}`,
-        { duration: 5000 }
-      );
-    }
-  };
-
-  const handleStopRecording = async () => {
-    try {
-      await recorder.stopRecording();
-      toast.success("Recording saved!", { duration: 5000 });
-      await updateStorageInfo();
-    } catch (error) {
-      toast.error(
-        `Failed to stop recording: ${error instanceof Error ? error.message : String(error)}`,
-        { duration: 5000 }
-      );
-    }
-  };
-
-  const handleAddFrame = async () => {
-    try {
-      await recorder.addFrame();
-      toast.success("Frame captured! Check console for capture details.", {
-        duration: 5000,
-      });
-    } catch (error) {
-      console.error("Frame capture error:", error);
-      toast.error(
-        `Failed to capture frame: ${error instanceof Error ? error.message : String(error)}`,
-        { duration: 5000 }
-      );
-    }
-  };
-
-  const handleExport = async (reelId?: string) => {
-    const targetReelId = reelId || recorder.currentReel?.id;
-
-    if (!targetReelId) {
-      toast.error(
-        "No reel selected. Start a recording or select a saved reel!",
-        {
-          duration: 5000,
-        }
-      );
-      return;
-    }
-
-    try {
-      await recorder.exportReel(targetReelId, exportFormat);
-      toast.success(`Exported successfully as ${exportFormat.toUpperCase()}!`, {
-        duration: 5000,
-      });
-    } catch (error) {
-      console.error("Export error:", error);
-      toast.error(
-        `Export failed: ${error instanceof Error ? error.message : String(error)}`,
-        { duration: 5000 }
-      );
-    }
-  };
+  // Update storage info on mount and when inventory changes
+  useEffect(() => {
+    updateStorageInfo();
+  }, [state.inventory]);
 
   const updateStorageInfo = async () => {
     try {
@@ -232,6 +121,53 @@ function DemoContent({
       );
     } catch {
       setStorageInfo("Error loading storage info");
+    }
+  };
+
+  // Handler functions for demo UI buttons
+  const handleStartRecording = async () => {
+    try {
+      await recorder.startRecording();
+    } catch (error) {
+      toast.error(
+        `Failed to start: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  };
+
+  const handleAddFrame = async () => {
+    try {
+      await recorder.addFrame();
+    } catch (error) {
+      toast.error(
+        `Failed to add frame: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  };
+
+  const handleStopRecording = async () => {
+    try {
+      await recorder.stopRecording();
+    } catch (error) {
+      toast.error(
+        `Failed to stop: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  };
+
+  const handleExport = async (reelId?: string) => {
+    const targetReelId = reelId || recorder.currentReel?.id;
+    if (!targetReelId) {
+      toast.error("No reel to export!");
+      return;
+    }
+    try {
+      await recorder.exportReel(targetReelId, exportFormat);
+      toast.success(`Exported as ${exportFormat.toUpperCase()}!`);
+    } catch (error) {
+      toast.error(
+        `Export failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   };
 
@@ -276,24 +212,6 @@ function DemoContent({
         margin: "0 auto",
       }}
     >
-      <ClickReelRecorder
-        visible={state.ui.recorderVisible}
-        position={recorderPosition}
-        initialCollapsed={preferences.recorderUI.startMinimized}
-        onCollapsedChange={(collapsed) => {
-          // Persist collapsed state to preferences
-          savePreferences({
-            ...preferences,
-            recorderUI: {
-              ...preferences.recorderUI,
-              startMinimized: collapsed,
-            },
-          });
-        }}
-        onInventoryClick={() => setShowInventory(true)}
-        onSettingsClick={() => setShowSettings(true)}
-      />
-
       <h1 style={{ color: "#333", marginBottom: "0.5rem" }}>
         Click Reel Playground 🎬
       </h1>
@@ -337,7 +255,8 @@ function DemoContent({
         </div>
         <div style={{ marginTop: "0.5rem", fontSize: "12px", color: "#666" }}>
           Status: Recorder {state.ui.recorderVisible ? "Visible" : "Hidden"} |
-          Obfuscation {state.ui?.obfuscationActive ? "Enabled" : "Disabled"}
+          Obfuscation{" "}
+          {state.preferences.obfuscationEnabled ? "Enabled" : "Disabled"}
         </div>
       </section>
 
@@ -725,68 +644,80 @@ function DemoContent({
         >
           📼 Click Reel Inventory
         </h2>
-        <ClickReelInventory
-          onStartRecording={handleStartRecording}
-          style={{ padding: 0 }}
-        />
+        <div
+          style={{
+            background: "white",
+            padding: "2rem",
+            borderRadius: "6px",
+            border: "1px solid #e9ecef",
+          }}
+        >
+          <p style={{ color: "#666", fontSize: "1rem", marginBottom: "1rem" }}>
+            <strong>ClickReelComplete</strong> provides a floating recorder
+            panel with built-in inventory.
+          </p>
+          <p style={{ color: "#666", fontSize: "0.9rem" }}>
+            Press{" "}
+            <code
+              style={{
+                background: "#e9ecef",
+                padding: "2px 6px",
+                borderRadius: "3px",
+              }}
+            >
+              Ctrl+Shift+E
+            </code>{" "}
+            to open the Inventory Panel, or click the inventory button on the
+            floating recorder panel.
+          </p>
+        </div>
       </section>
 
       {/* Settings */}
       <section style={{ marginTop: "2rem" }}>
-        <button
-          onClick={() => setShowSettings(true)}
+        <h2
           style={{
-            padding: "12px 24px",
-            background: "#3b82f6",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontSize: "16px",
-            fontWeight: 600,
+            fontSize: "2rem",
+            fontWeight: "bold",
+            marginBottom: "1.5rem",
+            color: "#1e293b",
           }}
         >
-          ⚙️ Open Settings
-        </button>
-        <p style={{ fontSize: "14px", color: "#666", marginTop: "0.5rem" }}>
-          Configure preferences: marker appearance, capture timing, export
-          format, etc.
-        </p>
+          ⚙️ Settings
+        </h2>
+        <div
+          style={{
+            background: "white",
+            padding: "2rem",
+            borderRadius: "6px",
+            border: "1px solid #e9ecef",
+          }}
+        >
+          <p style={{ color: "#666", fontSize: "1rem", marginBottom: "1rem" }}>
+            <strong>ClickReelComplete</strong> provides a floating recorder
+            panel with built-in settings.
+          </p>
+          <p style={{ color: "#666", fontSize: "0.9rem" }}>
+            Press{" "}
+            <code
+              style={{
+                background: "#e9ecef",
+                padding: "2px 6px",
+                borderRadius: "3px",
+              }}
+            >
+              Ctrl+Shift+G
+            </code>{" "}
+            to open the Settings Panel, or click the settings button on the
+            floating recorder panel.
+          </p>
+        </div>
       </section>
 
-      {/* Settings Panel */}
-      <SettingsPanel
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-        preferences={preferences}
-        onSave={(newPrefs) => {
-          // Check if obfuscation setting changed
-          const obfuscationChanged =
-            newPrefs.obfuscationEnabled !== preferences.obfuscationEnabled;
+      {/* ClickReelComplete provides Settings and Inventory panels - no manual UI needed */}
 
-          savePreferences(newPrefs);
-
-          // Sync runtime state if obfuscation changed
-          if (
-            obfuscationChanged &&
-            newPrefs.obfuscationEnabled !== state.ui?.obfuscationActive
-          ) {
-            dispatch({ type: "TOGGLE_OBFUSCATION" as any });
-            console.log(
-              `📍 Syncing obfuscation to ${newPrefs.obfuscationEnabled} (from settings save)`
-            );
-          }
-
-          toast.success("Settings saved!", { duration: 3000 });
-        }}
-        onReset={() => {
-          resetToDefaults();
-          toast.success("Reset to defaults!", { duration: 3000 });
-        }}
-      />
-
-      {/* Inventory Panel */}
-      {showInventory && (
+      {/* Test Dialog 1 - Static */}
+      {showTestDialog1 && (
         <div
           style={{
             position: "fixed",
@@ -1058,15 +989,9 @@ function DemoContent({
   );
 }
 
-function AppContent({
-  recorderPosition,
-  onDragEnd,
-}: {
-  recorderPosition: { x: number; y: number };
-  onDragEnd: (event: any) => void;
-}) {
+function AppContent() {
   return (
-    <DndContext onDragEnd={onDragEnd}>
+    <div>
       <Toaster
         position="top-right"
         toastOptions={{
@@ -1089,90 +1014,17 @@ function AppContent({
           },
         }}
       />
-      <DemoContent recorderPosition={recorderPosition} />
-    </DndContext>
+      <DemoContent />
+      {/* ClickReelComplete handles all recorder, settings, and inventory UI */}
+      <ClickReelComplete />
+    </div>
   );
 }
 
-/**
- * Sanitize recorder position to ensure it's within the viewport
- */
-function sanitizeRecorderPosition(pos: { x: number; y: number }): {
-  x: number;
-  y: number;
-} {
-  const recorderWidth = 280; // Approximate width of the recorder
-  const recorderHeight = 400; // Approximate height of the recorder
-  const minMargin = 20; // Minimum margin from viewport edges
-
-  // Ensure position is within viewport bounds
-  const maxX = window.innerWidth - recorderWidth - minMargin;
-  const maxY = window.innerHeight - recorderHeight - minMargin;
-
-  const sanitized = {
-    x: Math.max(minMargin, Math.min(pos.x, maxX)),
-    y: Math.max(minMargin, Math.min(pos.y, maxY)),
-  };
-
-  // Log if position was adjusted
-  if (sanitized.x !== pos.x || sanitized.y !== pos.y) {
-    console.log(
-      `📍 Recorder position sanitized: (${pos.x}, ${pos.y}) → (${sanitized.x}, ${sanitized.y})`
-    );
-  }
-
-  return sanitized;
-}
-
 function App() {
-  const [recorderPosition, setRecorderPosition] = useState(() => {
-    try {
-      const stored = localStorage.getItem("click-reel-position");
-      const position = stored
-        ? JSON.parse(stored)
-        : { x: window.innerWidth - 300, y: 20 };
-
-      // Sanitize the loaded position
-      return sanitizeRecorderPosition(position);
-    } catch {
-      return sanitizeRecorderPosition({ x: window.innerWidth - 300, y: 20 });
-    }
-  });
-
-  // Handle window resize - reposition recorder if it's now off-screen
-  useEffect(() => {
-    const handleResize = () => {
-      setRecorderPosition((prev) => sanitizeRecorderPosition(prev));
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const handleDragEnd = (event: any) => {
-    if (event.active.id === "click-reel-recorder") {
-      const newPosition = sanitizeRecorderPosition({
-        x: recorderPosition.x + event.delta.x,
-        y: recorderPosition.y + event.delta.y,
-      });
-      setRecorderPosition(newPosition);
-      try {
-        localStorage.setItem(
-          "click-reel-position",
-          JSON.stringify(newPosition)
-        );
-      } catch (err) {
-        console.warn("Failed to save recorder position:", err);
-      }
-    }
-  };
-
   return (
     <ClickReelProvider>
-      <AppContent
-        recorderPosition={recorderPosition}
-        onDragEnd={handleDragEnd}
-      />
+      <AppContent />
     </ClickReelProvider>
   );
 }

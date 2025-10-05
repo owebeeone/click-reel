@@ -417,7 +417,56 @@ async function captureToDataURL(
       });
     }
 
-    const dataUrl = await htmlToImage.toPng(element, captureOptions);
+    // Suppress console.error for known CSS CORS issues during capture
+    const originalConsoleError = console.error;
+    const suppressedErrors: string[] = [];
+    console.error = (...args: any[]) => {
+      const message = args.join(" ");
+      if (
+        message.includes("cssRules") ||
+        message.includes("Error inlining remote css") ||
+        message.includes("Error loading remote stylesheet") ||
+        message.includes("Error while reading CSS rules")
+      ) {
+        // Silently suppress known CSS CORS errors
+        suppressedErrors.push(message);
+        return;
+      }
+      // Pass through other errors
+      originalConsoleError.apply(console, args);
+    };
+
+    let dataUrl: string;
+    try {
+      dataUrl = await htmlToImage.toPng(element, captureOptions);
+    } catch (error) {
+      // Handle CORS errors from external CSS stylesheets
+      if (error instanceof Error && error.message.includes("cssRules")) {
+        console.warn(
+          "⚠️ CSS inlining failed (likely CORS issue with external stylesheets):",
+          error.message
+        );
+        console.log("Retrying capture without CSS inlining...");
+        // Retry without font embedding which can cause CSS issues
+        const fallbackOptions = {
+          ...captureOptions,
+          skipFonts: true,
+        };
+        dataUrl = await htmlToImage.toPng(element, fallbackOptions);
+      } else {
+        // Re-throw other errors
+        throw error;
+      }
+    } finally {
+      // Restore console.error
+      console.error = originalConsoleError;
+      // Log suppressed errors count if any
+      if (suppressedErrors.length > 0) {
+        console.log(
+          `📷 Suppressed ${suppressedErrors.length} CSS CORS warning(s) during capture`
+        );
+      }
+    }
 
     // Remove marker before restoring obfuscation
     if (markerElement && element.contains(markerElement)) {
@@ -561,7 +610,27 @@ export async function captureToBlob(
       void element.offsetHeight;
     }
 
-    const blob = await htmlToImage.toBlob(element, {
+    // Suppress console.error for known CSS CORS issues during capture
+    const originalConsoleError = console.error;
+    const suppressedErrors: string[] = [];
+    console.error = (...args: any[]) => {
+      const message = args.join(" ");
+      if (
+        message.includes("cssRules") ||
+        message.includes("Error inlining remote css") ||
+        message.includes("Error loading remote stylesheet") ||
+        message.includes("Error while reading CSS rules")
+      ) {
+        // Silently suppress known CSS CORS errors
+        suppressedErrors.push(message);
+        return;
+      }
+      // Pass through other errors
+      originalConsoleError.apply(console, args);
+    };
+
+    let blob: Blob | null;
+    const captureOpts = {
       quality: 0.95,
       pixelRatio: options.scale || 2,
       width: options.maxWidth || window.innerWidth,
@@ -572,7 +641,36 @@ export async function captureToBlob(
         transform: `translate(${-currentScrollX}px, ${-currentScrollY}px)`,
         transformOrigin: "top left",
       },
-    });
+    };
+
+    try {
+      blob = await htmlToImage.toBlob(element, captureOpts);
+    } catch (error) {
+      // Handle CORS errors from external CSS stylesheets
+      if (error instanceof Error && error.message.includes("cssRules")) {
+        console.warn(
+          "⚠️ CSS inlining failed during blob capture (likely CORS issue):",
+          error.message
+        );
+        console.log("Retrying blob capture without font embedding...");
+        blob = await htmlToImage.toBlob(element, {
+          ...captureOpts,
+          skipFonts: true,
+        });
+      } else {
+        // Re-throw other errors
+        throw error;
+      }
+    } finally {
+      // Restore console.error
+      console.error = originalConsoleError;
+      // Log suppressed errors count if any
+      if (suppressedErrors.length > 0) {
+        console.log(
+          `📷 Suppressed ${suppressedErrors.length} CSS CORS warning(s) during blob capture`
+        );
+      }
+    }
 
     // Restore fixed elements
     fixedElements.forEach(({ el, originalTransform }) => {

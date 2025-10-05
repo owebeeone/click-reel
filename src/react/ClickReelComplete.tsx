@@ -13,6 +13,7 @@ import {
 import { ClickReelRecorder } from "./ClickReelRecorder";
 import { ClickReelSettings } from "./ClickReelSettings";
 import { ClickReelInventory } from "./ClickReelInventory";
+import { useClickReelContext } from "./context/ClickReelContext";
 
 /**
  * Sanitize recorder position to ensure it's within the viewport
@@ -70,6 +71,9 @@ export function ClickReelComplete({
   initialPosition,
   startMinimized = false,
 }: ClickReelCompleteProps) {
+  // Get context to read preferences
+  const { state } = useClickReelContext();
+
   // Configure drag sensors
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -119,13 +123,17 @@ export function ClickReelComplete({
     }
   };
 
+  // Use preference from context if available, otherwise fall back to prop
+  const shouldStartMinimized =
+    state.preferences.recorderUI?.startMinimized ?? startMinimized;
+
   return (
     <>
       {/* Draggable recorder with DndContext */}
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
         <ClickReelRecorder
           position={recorderPosition}
-          initialCollapsed={startMinimized}
+          initialCollapsed={shouldStartMinimized}
         />
       </DndContext>
 

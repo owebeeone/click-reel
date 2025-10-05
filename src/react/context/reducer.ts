@@ -2,58 +2,100 @@
  * Reducer for Click Reel state management
  */
 
-import type { ClickReelState, Action } from "../../types";
+import type { ClickReelState, Action, UserPreferences } from "../../types";
 import { ActionType } from "../../types";
 
 /**
- * Initial state
+ * Default preferences (fallback if nothing in localStorage)
  */
-export const initialState: ClickReelState = {
-  recorderState: "idle",
-  currentReel: null,
-  inventory: [],
-  preferences: {
-    markerSize: 20,
-    markerColor: "#ff0000",
-    exportFormat: "gif",
-    postClickDelay: 100,
-    postClickInterval: 50,
-    maxCaptureDuration: 30000,
-    scale: 1,
-    maxWidth: undefined,
-    maxHeight: undefined,
-    obfuscationEnabled: false,
-    keyboardShortcuts: {
-      toggleRecorder: "ctrl+shift+r",
-      toggleObfuscation: "ctrl+shift+o",
-      startRecording: "ctrl+shift+s",
-      stopRecording: "ctrl+shift+s",
-      armCapture: "ctrl+shift+a",
-      addFrame: "ctrl+shift+f",
-      toggleSettings: "ctrl+shift+g",
-      toggleInventory: "ctrl+shift+e",
-    },
-    recorderUI: {
-      showOnStartup: true,
-      startMinimized: false,
-    },
+const DEFAULT_PREFERENCES: UserPreferences = {
+  markerSize: 20,
+  markerColor: "#ff0000",
+  exportFormat: "gif",
+  postClickDelay: 100,
+  postClickInterval: 50,
+  maxCaptureDuration: 30000,
+  scale: 1,
+  maxWidth: undefined,
+  maxHeight: undefined,
+  obfuscationEnabled: false,
+  keyboardShortcuts: {
+    toggleRecorder: "ctrl+shift+r",
+    toggleObfuscation: "ctrl+shift+o",
+    startRecording: "ctrl+shift+s",
+    stopRecording: "ctrl+shift+s",
+    armCapture: "ctrl+shift+a",
+    addFrame: "ctrl+shift+f",
+    toggleSettings: "ctrl+shift+g",
+    toggleInventory: "ctrl+shift+e",
   },
-  loading: {
-    capturing: false,
-    encoding: false,
-    saving: false,
-    loading: false,
-  },
-  error: null,
-  ui: {
-    recorderVisible: true,
-    inventoryVisible: false,
-    settingsVisible: false,
-    obfuscationActive: false,
-    selectedReelId: null,
-    recorderPosition: { x: 20, y: 20 },
+  recorderUI: {
+    showOnStartup: true,
+    startMinimized: false,
   },
 };
+
+/**
+ * Load initial state with preferences from localStorage
+ */
+function createInitialState(): ClickReelState {
+  let preferences = DEFAULT_PREFERENCES;
+  let recorderVisible = true;
+
+  // Try to load preferences from localStorage synchronously
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem("click-reel-preferences");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        preferences = { ...DEFAULT_PREFERENCES, ...parsed };
+        recorderVisible = preferences.recorderUI?.showOnStartup !== false;
+        console.log("✅ Click Reel: Loaded preferences synchronously", {
+          showOnStartup: preferences.recorderUI?.showOnStartup,
+          startMinimized: preferences.recorderUI?.startMinimized,
+        });
+      }
+    } catch (error) {
+      console.warn("Failed to load Click Reel preferences:", error);
+    }
+  }
+
+  return {
+    recorderState: "idle",
+    currentReel: null,
+    inventory: [],
+    preferences,
+    loading: {
+      capturing: false,
+      encoding: false,
+      saving: false,
+      loading: false,
+    },
+    error: null,
+    ui: {
+      recorderVisible,
+      inventoryVisible: false,
+      settingsVisible: false,
+      obfuscationActive: false,
+      selectedReelId: null,
+      recorderPosition: { x: 20, y: 20 },
+    },
+  };
+}
+
+/**
+ * Get initial state (calls createInitialState() to load from localStorage)
+ * Export as a function so it's called fresh on every provider mount
+ */
+export function getInitialState(): ClickReelState {
+  return createInitialState();
+}
+
+/**
+ * Initial state constant (for backwards compatibility, but prefer getInitialState())
+ * Note: This is evaluated once at module load, so it may not reflect latest localStorage
+ */
+export const initialState: ClickReelState = createInitialState();
 
 /**
  * Reducer function
