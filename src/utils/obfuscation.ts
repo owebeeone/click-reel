@@ -188,44 +188,26 @@ function obfuscateTextWithCSS(
 ): void {
   if (!config.obfuscateText) return;
 
-  // Find all text-containing elements (but not inputs, which we handle separately)
-  const walker = document.createTreeWalker(element, NodeFilter.SHOW_ELEMENT, {
-    acceptNode: (node) => {
-      const el = node as HTMLElement;
+  // Find all leaf text elements (elements with text but no child elements with text)
+  // This is simpler and more effective than TreeWalker
+  const allElements = element.querySelectorAll("*");
 
-      // Skip script, style, svg, and input elements
-      if (
-        el.tagName === "SCRIPT" ||
-        el.tagName === "STYLE" ||
-        el.tagName === "SVG" ||
-        el.tagName === "INPUT" ||
-        el.tagName === "TEXTAREA"
-      ) {
-        return NodeFilter.FILTER_REJECT;
-      }
+  allElements.forEach((node) => {
+    const el = node as HTMLElement;
 
-      // Only process elements that have direct text content
-      const hasTextContent = Array.from(el.childNodes).some(
-        (child) =>
-          child.nodeType === Node.TEXT_NODE && child.textContent?.trim()
-      );
+    // Skip script, style, svg, and input elements
+    if (
+      el.tagName === "SCRIPT" ||
+      el.tagName === "STYLE" ||
+      el.tagName === "SVG" ||
+      el.tagName === "INPUT" ||
+      el.tagName === "TEXTAREA" ||
+      el.tagName === "SELECT"
+    ) {
+      return;
+    }
 
-      if (!hasTextContent) {
-        return NodeFilter.FILTER_SKIP;
-      }
-
-      return NodeFilter.FILTER_ACCEPT;
-    },
-  });
-
-  const elements: HTMLElement[] = [];
-  let node: Node | null;
-  while ((node = walker.nextNode())) {
-    elements.push(node as HTMLElement);
-  }
-
-  elements.forEach((el) => {
-    // Check if element should be preserved
+    // Check if element should be preserved (e.g., pii-disable class)
     if (shouldPreserve(el, config)) {
       return;
     }
@@ -235,18 +217,37 @@ function obfuscateTextWithCSS(
       return;
     }
 
-    // Store original styles
-    backup.styledElements.push({
-      el,
-      originalFilter: el.style.filter,
-      originalColor: el.style.color,
-      originalTextShadow: el.style.textShadow,
+    // Check if element has any text content (recursively)
+    const hasText = el.textContent && el.textContent.trim().length > 0;
+    if (!hasText) {
+      return;
+    }
+
+    // Only obfuscate leaf elements (elements that don't have child elements with text)
+    // This prevents applying blur multiple times in nested structures
+    const hasTextChildren = Array.from(el.children).some((child) => {
+      const childText = child.textContent?.trim() || "";
+      return childText.length > 0;
     });
 
-    // Apply blur filter to make text unreadable
-    el.style.filter = "blur(5px)";
-    el.style.userSelect = "none"; // Prevent text selection
+    if (!hasTextChildren) {
+      // This is a leaf element with text - apply blur
+      backup.styledElements.push({
+        el,
+        originalFilter: el.style.filter,
+        originalColor: el.style.color,
+        originalTextShadow: el.style.textShadow,
+      });
+
+      // Apply blur filter to make text unreadable
+      el.style.filter = "blur(5px)";
+      el.style.userSelect = "none"; // Prevent text selection
+    }
   });
+
+  console.log(
+    `🔒 Applied blur to ${backup.styledElements.length} text elements`
+  );
 }
 
 /**
@@ -583,34 +584,61 @@ export function obfuscateInPlaceLegacy(
 }
 
 /**
- * Restore original text from backup
+ * Restore original styles and content from backup
  */
 export function restoreObfuscation(backup: ObfuscationBackup): void {
   console.log(
-    `🔓 [START RESTORE] Restoring ${backup.textNodes.length} text nodes and ${backup.inputs.length} inputs`,
+    `🔓 [START RESTORE] Restoring ${backup.styledElements.length} CSS elements, ${backup.textNodes.length} text nodes, and ${backup.inputs.length} inputs`,
     "Backup ID:",
     backup.timestamp
   );
 
-  // Restore text nodes
+  // Restore CSS-styled elements (primary method)
+  backup.styledElements.forEach(
+    ({ el, originalFilter, originalColor, originalTextShadow }) => {
+      if (el.parentNode) {
+        // Restore original CSS properties
+        if (originalFilter) {
+          el.style.filter = originalFilter;
+        } else {
+          el.style.removeProperty("filter");
+        }
+
+        if (originalColor) {
+          el.style.color = originalColor;
+        } else {
+          el.style.removeProperty("color");
+        }
+
+        if (originalTextShadow) {
+          el.style.textShadow = originalTextShadow;
+        } else {
+          el.style.removeProperty("text-shadow");
+        }
+
+        // Also remove user-select
+        el.style.removeProperty("user-select");
+      }
+    }
+  );
+
+  // Restore text nodes (legacy)
   backup.textNodes.forEach(({ node, originalText }) => {
     if (node.parentNode) {
-      // Check node is still in DOM
       node.textContent = originalText;
     }
   });
 
-  // Restore inputs
+  // Restore inputs (legacy)
   backup.inputs.forEach(({ el, originalValue, originalPlaceholder }) => {
     if (el.parentNode) {
-      // Check element is still in DOM
       el.value = originalValue;
       el.placeholder = originalPlaceholder;
     }
   });
 
   console.log(
-    `🔓 [END RESTORE] Restored ${backup.textNodes.length} text nodes and ${backup.inputs.length} inputs`,
+    `🔓 [END RESTORE] Restored ${backup.styledElements.length} CSS elements, ${backup.textNodes.length} text nodes, and ${backup.inputs.length} inputs`,
     "Backup ID:",
     backup.timestamp
   );
