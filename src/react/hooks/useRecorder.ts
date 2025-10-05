@@ -473,6 +473,10 @@ export function useRecorder(): RecorderAPI {
         startingFrameOrder: startOrder,
       });
 
+      // Set settling flag to true
+      dispatch({ type: ActionType.SET_SETTLING, payload: true });
+      console.log("🔄 Settlement detection started");
+
       // Wait for initial delay
       console.log(
         `⏱️ Waiting ${postClickDelay}ms before first post-click capture...`
@@ -484,6 +488,7 @@ export function useRecorder(): RecorderAPI {
       let consecutiveIdenticalFrames = 0;
       let frameOrder = startOrder;
       let totalPostClickFrames = 0;
+      let settled = false;
 
       while (Date.now() - startTime < maxCaptureDuration) {
         try {
@@ -550,6 +555,7 @@ export function useRecorder(): RecorderAPI {
               console.log(
                 `✅ Final settled frame added: ${finalFrame.id}. Total detection frames: ${totalPostClickFrames}`
               );
+              settled = true;
               break;
             }
           } else {
@@ -579,15 +585,44 @@ export function useRecorder(): RecorderAPI {
         }
       }
 
-      if (Date.now() - startTime >= maxCaptureDuration) {
+      // If we didn't settle naturally, capture a final frame anyway (timeout or error exit)
+      if (!settled) {
         console.log(
-          `⏱️ Max capture duration reached (${maxCaptureDuration}ms), stopping post-click capture. Total frames: ${totalPostClickFrames}`
+          `⏱️ Settlement not detected (timeout or error). Capturing final frame anyway...`
         );
+
+        try {
+          const finalFrame = await captureFrame(
+            root,
+            originalEvent,
+            options,
+            reelId,
+            frameOrder,
+            "post-click",
+            false // Enable obfuscation for final frame
+          );
+
+          // Add the final frame to reel
+          dispatch({
+            type: ActionType.ADD_FRAME,
+            payload: { reelId, frame: finalFrame },
+          });
+
+          console.log(
+            `✅ Final frame captured on timeout: ${finalFrame.id}. Total detection frames: ${totalPostClickFrames}`
+          );
+        } catch (error) {
+          console.error("❌ Failed to capture final frame on timeout:", error);
+        }
       }
 
       console.log(
-        `📊 Post-click sequence finished. Total post-click frames captured: ${totalPostClickFrames}`
+        `📊 Post-click sequence finished. Total post-click frames captured: ${totalPostClickFrames}, Settled: ${settled}`
       );
+
+      // Set settling flag to false
+      dispatch({ type: ActionType.SET_SETTLING, payload: false });
+      console.log("✅ Settlement detection completed");
     },
     [dispatch, state.currentReel]
   );

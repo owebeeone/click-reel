@@ -70,6 +70,8 @@ export interface UIState {
   selectedReelId: string | null;
   /** Recorder UI position */
   recorderPosition: { x: number; y: number };
+  /** Whether settlement detection is in progress after an armed click */
+  settling: boolean;
 }
 
 /**
@@ -102,6 +104,7 @@ export enum ActionType {
   TOGGLE_SETTINGS = "TOGGLE_SETTINGS",
   TOGGLE_OBFUSCATION = "TOGGLE_OBFUSCATION",
   SET_RECORDER_POSITION = "SET_RECORDER_POSITION",
+  SET_SETTLING = "SET_SETTLING",
 
   // Loading actions
   SET_LOADING = "SET_LOADING",
@@ -134,6 +137,7 @@ export type Action =
       type: ActionType.SET_RECORDER_POSITION;
       payload: { x: number; y: number };
     }
+  | { type: ActionType.SET_SETTLING; payload: boolean }
   | {
       type: ActionType.SET_LOADING;
       payload: { key: keyof ClickReelState["loading"]; value: boolean };

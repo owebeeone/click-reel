@@ -444,7 +444,9 @@ function DemoContent() {
           </label>
           <select
             value={exportFormat}
-            onChange={(e) => setExportFormat(e.target.value as ExportFormat)}
+            onChange={(e) =>
+              setExportFormat(e.target.value as "gif" | "apng" | "zip")
+            }
             style={{
               padding: "0.5rem",
               fontSize: "1rem",
@@ -715,66 +717,6 @@ function DemoContent() {
       </section>
 
       {/* ClickReelComplete provides Settings and Inventory panels - no manual UI needed */}
-
-      {/* Test Dialog 1 - Static */}
-      {showTestDialog1 && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.5)",
-            zIndex: 999999,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "2rem",
-          }}
-          onClick={() => setShowInventory(false)}
-        >
-          <div
-            style={{
-              background: "white",
-              borderRadius: "12px",
-              maxWidth: "900px",
-              width: "100%",
-              maxHeight: "80vh",
-              overflow: "auto",
-              padding: "2rem",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "1.5rem",
-              }}
-            >
-              <h2 style={{ margin: 0, color: "#1e293b" }}>Saved Reels</h2>
-              <button
-                onClick={() => setShowInventory(false)}
-                style={{
-                  padding: "8px 16px",
-                  background: "#f1f5f9",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: "#475569",
-                }}
-              >
-                Close
-              </button>
-            </div>
-            <ClickReelInventory />
-          </div>
-        </div>
-      )}
-
-      {/* Recorder Component */}
-      {/* Recorder Testing - Now using floating recorder at top */}
 
       {/* Interactive Test Area */}
       <section

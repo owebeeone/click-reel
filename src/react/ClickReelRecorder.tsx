@@ -174,11 +174,17 @@ export function ClickReelRecorder({
     }
   };
 
-  // Get status text
+  // Get status text with frame count and settling indicator
   const getStatusText = () => {
+    // Check if currently settling (during post-click capture)
+    if (state.ui.settling) {
+      return "Settling...";
+    }
+
     switch (recorder.state) {
       case "recording":
-        return "Recording";
+        const frameCount = recorder.currentReel?.frames.length || 0;
+        return `Frames: ${frameCount}`;
       case "armed":
         return "Armed";
       case "processing":
@@ -189,6 +195,9 @@ export function ClickReelRecorder({
         return "Idle";
     }
   };
+
+  // Check if status is clickable (to disarm when armed or settling)
+  const isStatusClickable = recorder.state === "armed" || state.ui.settling;
 
   return (
     <div
@@ -249,6 +258,60 @@ export function ClickReelRecorder({
               Click Reel
             </span>
           </div>
+
+          {/* Status Indicator - visible in both expanded and minimized views */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              marginRight: "8px",
+            }}
+          >
+            <div
+              style={{
+                width: "6px",
+                height: "6px",
+                borderRadius: "50%",
+                background: getStatusColor(),
+                boxShadow: `0 0 6px ${getStatusColor()}`,
+                animation:
+                  recorder.state === "armed" || state.ui.settling
+                    ? "pulse 1.5s ease-in-out infinite"
+                    : "none",
+              }}
+            />
+            <span
+              onClick={
+                isStatusClickable
+                  ? (e) => {
+                      e.stopPropagation();
+                      console.log("🎯 Disarming via status click (header)");
+                      recorder.disarm();
+                    }
+                  : undefined
+              }
+              style={{
+                color: "#e2e8f0",
+                fontSize: "11px",
+                fontWeight: 600,
+                cursor: isStatusClickable ? "pointer" : "default",
+                textDecoration: isStatusClickable ? "underline" : "none",
+                whiteSpace: "nowrap",
+                pointerEvents: isStatusClickable ? "auto" : "none",
+              }}
+              title={
+                isStatusClickable
+                  ? state.ui.settling
+                    ? "Click to cancel settling and disarm"
+                    : "Click to disarm (cancel capture)"
+                  : undefined
+              }
+            >
+              {getStatusText()}
+            </span>
+          </div>
+
           {!isCollapsed && (
             <button
               onClick={(e) => {
@@ -528,7 +591,7 @@ export function ClickReelRecorder({
         {/* Body - only show when not collapsed */}
         {!isCollapsed && (
           <div style={{ padding: "16px" }}>
-            {/* Status Indicator */}
+            {/* Obfuscation Controls */}
             <div
               style={{
                 display: "flex",
@@ -540,22 +603,6 @@ export function ClickReelRecorder({
                 borderRadius: "8px",
               }}
             >
-              <div
-                style={{
-                  width: "8px",
-                  height: "8px",
-                  borderRadius: "50%",
-                  background: getStatusColor(),
-                  boxShadow: `0 0 8px ${getStatusColor()}`,
-                  animation:
-                    recorder.state === "armed"
-                      ? "pulse 1.5s ease-in-out infinite"
-                      : "none",
-                }}
-              />
-              <span style={{ color: "#e2e8f0", fontSize: "13px" }}>
-                {getStatusText()}
-              </span>
               <button
                 onClick={() => {
                   dispatch({ type: ActionType.TOGGLE_OBFUSCATION });

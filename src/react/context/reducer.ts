@@ -79,6 +79,7 @@ function createInitialState(): ClickReelState {
       obfuscationActive: false,
       selectedReelId: null,
       recorderPosition: { x: 20, y: 20 },
+      settling: false,
     },
   };
 }
@@ -245,6 +246,15 @@ export function clickReelReducer(
         ui: {
           ...state.ui,
           recorderPosition: action.payload,
+        },
+      };
+
+    case ActionType.SET_SETTLING:
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          settling: action.payload,
         },
       };
 
