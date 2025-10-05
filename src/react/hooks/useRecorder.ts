@@ -78,9 +78,17 @@ export function useRecorder(): RecorderAPI {
   const startRecording = useCallback(async () => {
     try {
       const reelId = nanoid();
+      // Format date as YYYY-MM-DD-HH_MM_SS (filesystem-safe)
+      const now = new Date();
+      const formattedDate = now
+        .toISOString()
+        .replace(/T/, "-") // Replace T with underscore
+        .replace(/:/g, "_") // Replace colons with underscores
+        .replace(/\..+/, ""); // Remove milliseconds and Z
+
       const newReel: Reel = {
         id: reelId,
-        title: `Recording ${new Date().toLocaleString()}`,
+        title: `Recording-${formattedDate}`,
         description: "",
         startTime: Date.now(),
         frames: [],
