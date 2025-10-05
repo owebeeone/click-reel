@@ -16,6 +16,7 @@ The library is now feature-complete with all core functionality implemented! Cur
 - ✅ **Smart Capture** - Pre and post-interaction screenshots with intelligent settling detection
 - ✅ **Visual Markers** - Annotated click locations with customizable styles
 - ✅ **Animated Output** - Export as GIF, APNG, or ZIP with configurable quality
+- ✅ **Individual Frames** - ZIP exports include both `pngs/` and `gifs/` folders with individual frame files
 - ✅ **Persistent Storage** - Save recordings to IndexedDB with full CRUD operations
 - ✅ **Privacy Mode** - Built-in PII obfuscation with CSS class-based control (`pii-enable`/`pii-disable`)
 - ✅ **Keyboard Shortcuts** - Fully configurable hotkeys for all actions
@@ -24,6 +25,7 @@ The library is now feature-complete with all core functionality implemented! Cur
 - ✅ **Inventory Management** - View, search, sort, and manage saved reels
 - ✅ **Playback UI** - Frame-by-frame playback with metadata display
 - ✅ **Settings Panel** - User preferences with logarithmic time controls and persistence
+- ✅ **Auto-Named Recordings** - Recordings automatically named with filesystem-safe YYYY-MM-DD format
 
 ## Installation
 
@@ -31,7 +33,7 @@ The library is now feature-complete with all core functionality implemented! Cur
 npm install @owebeeone/click-reel
 ```
 
-> **Note**: Library is under active development. Installation will be available after Phase 14 (npm publish).
+> **Note**: Library is under active development. Public npm installation will be available after Phase 14 (npm publish).
 
 ## Quick Start
 
@@ -213,8 +215,37 @@ For detailed feature specifications, see [CLICK-REEL-SPEC.md](./CLICK-REEL-SPEC.
 - `exportReel()` - Export reel as GIF/APNG/ZIP
 - `obfuscateInPlace()` - PII obfuscation for privacy
 
+## Export Formats
+
+### ZIP Bundle Contents
+
+When exporting as ZIP, you get a complete package:
+
+```
+recording-YYYY-MM-DD_HH_MM_SS.zip
+├── recording-YYYY-MM-DD_HH_MM_SS.gif          # Animated GIF
+├── recording-YYYY-MM-DD_HH_MM_SS.png          # Animated APNG
+├── pngs/                                       # Individual PNG frames
+│   ├── frame-001.png
+│   ├── frame-002.png
+│   └── ...
+├── gifs/                                       # Individual GIF frames
+│   ├── frame-001.gif
+│   ├── frame-002.gif
+│   └── ...
+├── recording-YYYY-MM-DD_HH_MM_SS-metadata.json
+└── recording-YYYY-MM-DD_HH_MM_SS-viewer.html
+```
+
+**Benefits:**
+- **Animated files** for immediate playback
+- **Individual PNGs** for high-quality frame-by-frame analysis
+- **Individual GIFs** for universal compatibility
+- **Metadata** for programmatic access to recording details
+- **HTML viewer** for standalone playback
+
 ---
 
-**Current Version:** 0.1.0 (Development)  
+**Current Version:** 0.0.1 (Development)  
 **Status:** Phase 11 - Integration & Polish 🚧  
-**Last Updated:** October 4, 2025
+**Last Updated:** October 5, 2025
