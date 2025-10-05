@@ -40,13 +40,19 @@ export function ClickReelProvider({ children }: ClickReelProviderProps) {
 
   // Load inventory on mount
   useEffect(() => {
+    let isMounted = true;
+
     const loadInventory = async () => {
       try {
+        // Guard for non-browser test environments
+        if (typeof window === 'undefined') return;
         const storage = getStorageService();
         await storage.init();
         const inventory = await storage.loadAllReels();
+        if (!isMounted) return;
         dispatch({ type: ActionType.LOAD_INVENTORY, payload: inventory });
       } catch (error) {
+        if (!isMounted) return;
         dispatch({
           type: ActionType.SET_ERROR,
           payload: {
@@ -59,6 +65,10 @@ export function ClickReelProvider({ children }: ClickReelProviderProps) {
     };
 
     loadInventory();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (

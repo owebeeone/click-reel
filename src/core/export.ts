@@ -184,7 +184,7 @@ async function exportZIP(
       // Add PNG frame
       const pngBlob =
         typeof frame.image === "string"
-          ? await dataURLToBlob(frame.image)
+          ? dataURLToBlob(frame.image)
           : frame.image;
       pngsFolder.file(`frame-${paddedNum}.png`, pngBlob);
 

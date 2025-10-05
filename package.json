@@ -1,7 +1,10 @@
 {
   "name": "@owebeeone/click-reel",
   "private": false,
-  "version": "0.0.1",
+  "publishConfig": {
+    "access": "public"
+  },
+  "version": "0.1.0",
   "description": "Browser-side interaction recorder - captures annotated screenshots into animated GIF/APNG",
   "type": "module",
   "main": "./dist/click-reel.umd.js",
