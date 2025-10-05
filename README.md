@@ -13,9 +13,9 @@ Capture annotated screenshots of user interactions and export as GIF, APNG, or Z
 
 ## Status
 
-🎉 **Phase 11 (Integration & Polish) - In Progress**
+🎉 **MLP - Usable - Polish In Progress**
 
-The library is now feature-complete with all core functionality implemented! Currently in final integration and polish phase.
+The library is now feature-complete with all core functionality implemented! Currently in polish phase.
 
 ## Features
 
@@ -38,8 +38,6 @@ The library is now feature-complete with all core functionality implemented! Cur
 ```bash
 npm install @owebeeone/click-reel
 ```
-
-> **Note**: Library is under active development. Public npm installation will be available after Phase 14 (npm publish).
 
 ## Quick Start
 
