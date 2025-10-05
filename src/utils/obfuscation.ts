@@ -23,7 +23,7 @@ export const DEFAULT_OBFUSCATION_CONFIG: ObfuscationConfig = {
     ".user-content",
     ".sensitive",
   ],
-  replacementChar: "█",
+  replacementChar: "X", // Use X instead of block character for better width matching
 };
 
 /**
@@ -137,7 +137,14 @@ export function shouldObfuscate(
  * Replace text with placeholder characters (preserving length and whitespace structure)
  */
 function replaceText(text: string, replacementChar: string): string {
-  return text.replace(/\S/g, replacementChar);
+  // Preserve whitespace and match character widths for layout neutrality
+  return text.replace(/./g, (char) => {
+    if (/\s/.test(char)) return char; // Preserve whitespace exactly
+    if (/[a-z]/.test(char)) return "x"; // lowercase letters → x (similar width)
+    if (/[A-Z]/.test(char)) return "X"; // uppercase letters → X (similar width)
+    if (/[0-9]/.test(char)) return "0"; // numbers → 0 (similar width)
+    return replacementChar; // everything else
+  });
 }
 
 /**

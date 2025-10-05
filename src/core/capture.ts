@@ -46,6 +46,25 @@ export async function captureFrame(
   const target = (pointerEvent.target as HTMLElement) || root;
   const elementPath = getElementPath(target, root);
 
+  // Calculate relative offset within the clicked element (for marker repositioning after obfuscation)
+  const rect = target.getBoundingClientRect();
+  const relativeOffset = {
+    x: viewportCoords.x - rect.left,
+    y: viewportCoords.y - rect.top,
+  };
+
+  console.log("🎯 Click offset within element:", {
+    element: target.tagName,
+    elementRect: {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+    },
+    viewportCoords,
+    relativeOffset,
+  });
+
   // Get viewport info
   const viewportSize = getViewportSize();
   const scrollPosition = getScrollPosition();
@@ -74,37 +93,30 @@ export async function captureFrame(
     markerCoords, // Store for debugging
   };
 
-  // Add marker temporarily if needed
-  let markerElement: HTMLElement | null = null;
-  if (captureType === "pre-click") {
-    const markerStyle: MarkerStyle = {
-      ...DEFAULT_MARKER_STYLE,
-      ...options.markerStyle,
-    };
-
-    console.log("Marker positioning:", {
-      viewportCoords,
-      scrollPosition,
-      markerCoords,
-      strategy: "viewport + scroll (works for both regular and fixed elements)",
-    });
-
-    markerElement = createMarkerElement(
-      markerCoords,
-      pointerEvent.button,
-      markerStyle
-    );
-    root.appendChild(markerElement);
-  }
+  // Pass marker info to be added AFTER obfuscation
+  const markerInfo =
+    captureType === "pre-click"
+      ? {
+          targetElement: target,
+          relativeOffset: relativeOffset, // Use the calculated offset, not relativeCoords
+          viewportCoords,
+          scrollPosition,
+          buttonType: pointerEvent.button,
+          style: {
+            ...DEFAULT_MARKER_STYLE,
+            ...options.markerStyle,
+          },
+        }
+      : null;
 
   try {
-    // Capture the image (captureToDataURL handles hiding excluded elements)
-    const dataUrl = await captureToDataURL(root, options, skipObfuscation);
-
-    // Clean up marker
-    if (markerElement && root.contains(markerElement)) {
-      root.removeChild(markerElement);
-    }
+    // Capture the image (captureToDataURL will add marker AFTER obfuscation)
+    const dataUrl = await captureToDataURL(
+      root,
+      options,
+      skipObfuscation,
+      markerInfo
+    );
 
     return await finishFrame(
       frameId,
@@ -116,10 +128,6 @@ export async function captureFrame(
       options
     );
   } catch (error) {
-    // Clean up marker on error
-    if (markerElement && root.contains(markerElement)) {
-      root.removeChild(markerElement);
-    }
     throw error;
   }
 }
@@ -158,7 +166,15 @@ async function finishFrame(
 async function captureToDataURL(
   element: HTMLElement,
   options: CaptureOptions,
-  skipObfuscation: boolean = false
+  skipObfuscation: boolean = false,
+  markerInfo: {
+    targetElement: HTMLElement;
+    relativeOffset: { x: number; y: number };
+    viewportCoords: { x: number; y: number };
+    scrollPosition: { x: number; y: number };
+    buttonType: number;
+    style: MarkerStyle;
+  } | null = null
 ): Promise<string> {
   // Temporarily hide excluded elements during capture
   const excludedElements: Array<{ el: HTMLElement; originalDisplay: string }> =
@@ -222,6 +238,44 @@ async function captureToDataURL(
       obfuscationBackup = obfuscateInPlace(element, DEFAULT_OBFUSCATION_CONFIG);
 
       // Force a small delay to ensure text updates are rendered
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    // Add marker AFTER obfuscation using recalculated position
+    let markerElement: HTMLElement | null = null;
+    if (markerInfo && !skipObfuscation) {
+      // Get element's NEW position after obfuscation
+      const rectAfter = markerInfo.targetElement.getBoundingClientRect();
+
+      // Calculate marker position: element's new position + original relative offset + scroll
+      const markerCoords = {
+        x:
+          rectAfter.left +
+          markerInfo.relativeOffset.x +
+          markerInfo.scrollPosition.x,
+        y:
+          rectAfter.top +
+          markerInfo.relativeOffset.y +
+          markerInfo.scrollPosition.y,
+      };
+
+      console.log("📍 Adding marker AFTER obfuscation:", {
+        originalViewportCoords: markerInfo.viewportCoords,
+        elementRectAfter: { left: rectAfter.left, top: rectAfter.top },
+        relativeOffset: markerInfo.relativeOffset,
+        recalculatedMarkerCoords: markerCoords,
+        scroll: markerInfo.scrollPosition,
+      });
+
+      markerElement = createMarkerElement(
+        markerCoords,
+        markerInfo.buttonType,
+        markerInfo.style
+      );
+      element.appendChild(markerElement);
+
+      // Force reflow
+      void element.offsetHeight;
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
 
@@ -358,6 +412,11 @@ async function captureToDataURL(
     }
 
     const dataUrl = await htmlToImage.toPng(element, captureOptions);
+
+    // Remove marker before restoring obfuscation
+    if (markerElement && element.contains(markerElement)) {
+      element.removeChild(markerElement);
+    }
 
     // Restore obfuscated text immediately
     if (obfuscationBackup) {
