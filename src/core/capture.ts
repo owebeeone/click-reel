@@ -337,6 +337,26 @@ async function captureToDataURL(
     }
 
     console.log("🎬 Starting html-to-image capture...");
+
+    // Check if scroll changed during setup
+    const scrollBeforeCapture = {
+      x: window.scrollX || window.pageXOffset || 0,
+      y: window.scrollY || window.pageYOffset || 0,
+    };
+    if (
+      scrollBeforeCapture.x !== currentScrollX ||
+      scrollBeforeCapture.y !== currentScrollY
+    ) {
+      console.warn("⚠️ Scroll position changed during capture setup!", {
+        original: { x: currentScrollX, y: currentScrollY },
+        current: scrollBeforeCapture,
+        delta: {
+          x: scrollBeforeCapture.x - currentScrollX,
+          y: scrollBeforeCapture.y - currentScrollY,
+        },
+      });
+    }
+
     const dataUrl = await htmlToImage.toPng(element, captureOptions);
 
     // Restore obfuscated text immediately
