@@ -40,8 +40,6 @@ export interface ClickReelCompleteProps {
   initialPosition?: { x: number; y: number };
   /** Whether the recorder should start minimized */
   startMinimized?: boolean;
-  /** Whether the recorder should be visible on startup */
-  showOnStartup?: boolean;
 }
 
 /**
@@ -71,7 +69,6 @@ export interface ClickReelCompleteProps {
 export function ClickReelComplete({
   initialPosition,
   startMinimized = false,
-  showOnStartup = true,
 }: ClickReelCompleteProps) {
   // Configure drag sensors
   const sensors = useSensors(useSensor(PointerSensor));
@@ -129,7 +126,6 @@ export function ClickReelComplete({
         <ClickReelRecorder
           position={recorderPosition}
           initialCollapsed={startMinimized}
-          visible={showOnStartup}
         />
       </DndContext>
 

@@ -167,7 +167,7 @@ export function useRecorder(): RecorderAPI {
         offsetHeight: captureRoot.offsetHeight,
       });
 
-      // Capture a manual frame (no event)
+      // Capture a manual frame (no click marker for manual captures)
       const frame = await captureFrame(
         captureRoot,
         new PointerEvent("click", {
@@ -179,14 +179,11 @@ export function useRecorder(): RecorderAPI {
           scale: state.currentReel.settings.scale,
           maxWidth: state.currentReel.settings.maxWidth,
           maxHeight: state.currentReel.settings.maxHeight,
-          markerStyle: {
-            size: state.currentReel.settings.markerSize,
-            color: state.currentReel.settings.markerColor,
-          },
           obfuscationEnabled: state.currentReel.settings.obfuscationEnabled,
         },
         state.currentReel.id,
-        state.currentReel.frames.length
+        state.currentReel.frames.length,
+        "post-click" // Use post-click type to skip marker (line 98-110 in capture.ts)
       );
 
       // Add frame to reel

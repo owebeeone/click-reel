@@ -87,6 +87,12 @@ export function ClickReelRecorder({
         });
       },
       onToggleObfuscation: () => {
+        console.log(
+          "🔐 Toggling obfuscation from:",
+          state.preferences.obfuscationEnabled,
+          "to:",
+          !state.preferences.obfuscationEnabled
+        );
         dispatch({
           type: ActionType.UPDATE_PREFERENCES,
           payload: {
@@ -95,14 +101,20 @@ export function ClickReelRecorder({
         });
       },
       onStartRecording: () => {
+        console.log(
+          "🎬 Start/Stop recording shortcut - recorder state:",
+          recorder.state
+        );
         if (recorder.state === "idle") {
+          console.log("✅ Starting recording...");
           recorder.startRecording();
+        } else if (recorder.state === "recording") {
+          console.log("⏹️ Stopping recording...");
+          recorder.stopRecording();
         }
       },
       onStopRecording: () => {
-        if (recorder.state === "recording") {
-          recorder.stopRecording();
-        }
+        // Kept for backward compatibility but unused - startRecording now handles toggle
       },
       onArmCapture: () => {
         if (recorder.state === "recording") {

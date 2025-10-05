@@ -112,10 +112,12 @@ export interface KeyboardShortcuts {
   toggleRecorder: string;
   /** Toggle obfuscation */
   toggleObfuscation: string;
-  /** Arm/disarm capture */
-  armCapture: string;
+  /** Start recording */
+  startRecording: string;
   /** Stop recording */
   stopRecording: string;
+  /** Arm/disarm capture */
+  armCapture: string;
   /** Add manual frame */
   addFrame: string;
   /** Toggle settings panel */

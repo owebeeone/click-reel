@@ -24,8 +24,9 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   keyboardShortcuts: {
     toggleRecorder: "ctrl+shift+r",
     toggleObfuscation: "ctrl+shift+o",
-    armCapture: "ctrl+shift+a",
+    startRecording: "ctrl+shift+s",
     stopRecording: "ctrl+shift+s",
+    armCapture: "ctrl+shift+a",
     addFrame: "ctrl+shift+f",
     toggleSettings: "ctrl+shift+g",
     toggleInventory: "ctrl+shift+e",

@@ -132,14 +132,15 @@ function DemoContent({
       });
     },
     onStartRecording: () => {
+      // Ctrl+Shift+S now toggles start/stop
       if (recorder.state === "idle") {
         handleStartRecording();
+      } else if (recorder.state === "recording" || recorder.state === "armed") {
+        handleStopRecording();
       }
     },
     onStopRecording: () => {
-      if (recorder.state === "recording" || recorder.state === "armed") {
-        handleStopRecording();
-      }
+      // Kept for backward compatibility but unused - startRecording now handles toggle
     },
     onArmCapture: () => {
       if (recorder.state === "recording") {
@@ -325,10 +326,7 @@ function DemoContent({
             <code>Ctrl+Shift+E</code> - Toggle Inventory Panel
           </div>
           <div>
-            <code>Ctrl+Shift+S</code> - Start Recording
-          </div>
-          <div>
-            <code>Ctrl+Shift+X</code> - Stop Recording
+            <code>Ctrl+Shift+S</code> - Start/Stop Recording (toggle)
           </div>
           <div>
             <code>Ctrl+Shift+A</code> - Arm Capture (when recording)

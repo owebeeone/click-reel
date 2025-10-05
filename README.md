@@ -76,9 +76,10 @@ This single component gives you everything:
 <ClickReelComplete 
   initialPosition={{ x: 100, y: 100 }}  // Custom starting position
   startMinimized={true}                 // Start collapsed
-  showOnStartup={false}                 // Hidden until Ctrl+Shift+R
 />
 ```
+
+> **Note**: To control visibility on startup, use the Settings panel (Ctrl+Shift+G) → Recorder UI → "Show on Startup"
 
 ---
 

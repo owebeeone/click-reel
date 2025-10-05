@@ -143,19 +143,58 @@ export function useClickCapture(options: ClickCaptureOptions): void {
       }, 50); // Small delay to let capture sequence start
     };
 
-    // Attach the listener in capture phase (NOT passive so we can preventDefault)
-    // This allows us to intercept, capture, then replay the click
+    // CRITICAL: Also intercept click events and only allow replayed ones
+    // This prevents the browser's natural click from firing (it converts pointerdown → click)
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+
+      // Allow replayed clicks through
+      if ((event as any).__clickReelReplayed) {
+        console.log("✅ [useClickCapture] Allowing replayed click through");
+        return;
+      }
+
+      // Check if this is a Click Reel UI click (should flow normally)
+      const isClickReelUI =
+        target.closest('[data-screenshot-exclude="true"]') ||
+        target.closest(".pii-disable");
+
+      if (isClickReelUI) {
+        console.log(
+          "✅ [useClickCapture] Allowing Click Reel UI click through"
+        );
+        return;
+      }
+
+      // Block all other natural clicks (they've already been captured via pointerdown)
+      console.log(
+        "🛑 [useClickCapture] Blocking natural click (already captured)"
+      );
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+    };
+
+    // Attach both listeners in capture phase
     root.addEventListener("pointerdown", handlePointerDown, {
       capture: true, // Capture phase - intercept before target
       passive: false, // MUST be false to allow preventDefault
     });
 
-    console.log("Click capture listener attached to", root.tagName);
+    root.addEventListener("click", handleClick, {
+      capture: true, // Capture phase - intercept before target
+      passive: false, // MUST be false to allow preventDefault
+    });
 
-    // Cleanup function - MUST remove the exact same function that was added
+    console.log("Click capture listeners attached to", root.tagName);
+
+    // Cleanup function - MUST remove the exact same functions that were added
     return () => {
-      console.log("Removing click capture listener");
+      console.log("Removing click capture listeners");
       root.removeEventListener("pointerdown", handlePointerDown, {
+        capture: true, // Must match the addEventListener options
+      });
+      root.removeEventListener("click", handleClick, {
         capture: true, // Must match the addEventListener options
       });
       listenerAttachedRef.current = false;
