@@ -15,6 +15,12 @@ export const DEFAULT_OBFUSCATION_CONFIG: ObfuscationConfig = {
     ".brand",
     "nav a", // Navigation text usually safe
     "button", // Button text usually safe
+    "kbd", // Keyboard shortcuts (e.g., Ctrl+Shift+S)
+    "code", // Code snippets
+    "h1", // Page/section titles
+    "h2", // Section headings
+    "h3", // Subsection headings
+    "label", // Form labels (UI, not user data)
   ],
   obfuscateSelectors: [
     "[data-screenshot-obfuscate]",
@@ -112,7 +118,7 @@ export function shouldObfuscate(
   // Check PII classes first (highest priority)
   const piiStatus = shouldObfuscateByPII(element);
   if (piiStatus !== null) {
-    return piiStatus; // Explicit PII decision
+    return piiStatus; // Explicit PII decision (pii-enable=true, pii-disable=false)
   }
 
   // If explicitly preserved, don't obfuscate
@@ -120,24 +126,9 @@ export function shouldObfuscate(
     return false;
   }
 
-  // If element has obfuscate attribute, obfuscate it
-  if (element.hasAttribute("data-screenshot-obfuscate")) {
-    return true;
-  }
-
-  // Check if element matches any obfuscate selector
-  for (const selector of config.obfuscateSelectors) {
-    try {
-      if (element.matches(selector)) {
-        return true;
-      }
-    } catch (e) {
-      // Invalid selector, skip
-      continue;
-    }
-  }
-
-  return false;
+  // DEFAULT: Obfuscate everything unless explicitly marked as pii-disable
+  // This is the privacy-first approach - opt-out rather than opt-in
+  return true;
 }
 
 /**
