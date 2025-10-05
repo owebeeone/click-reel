@@ -11,6 +11,7 @@ import {
   generateFilename,
 } from "./metadata";
 import { DEFAULT_GIF_OPTIONS, DEFAULT_APNG_OPTIONS } from "../utils/constants";
+import { dataURLToBlob } from "../utils/image-utils";
 
 /**
  * Export format options
@@ -132,7 +133,7 @@ async function exportAPNG(
 }
 
 /**
- * Export reel as ZIP bundle with GIF/APNG and metadata
+ * Export reel as ZIP bundle with GIF/APNG, individual frames, and metadata
  */
 async function exportZIP(
   reel: Reel,
@@ -147,32 +148,76 @@ async function exportZIP(
 ): Promise<ExportResult> {
   const zip = new JSZip();
 
+  // Calculate total steps for progress reporting
+  const frameCount = reel.frames.length;
+  const totalSteps =
+    3 +
+    frameCount +
+    (options.includeMetadata ? 1 : 0) +
+    (options.includeHTML ? 1 : 0);
+  let currentStep = 0;
+
   // Add GIF
-  onProgress?.(0, 4, "Encoding GIF...");
+  onProgress?.(currentStep++, totalSteps, "Encoding GIF...");
   const gifBlob = await encodeGIF(reel.frames, options.gifOptions);
   zip.file(`${filename}.gif`, gifBlob);
 
   // Add APNG
-  onProgress?.(1, 4, "Encoding APNG...");
+  onProgress?.(currentStep++, totalSteps, "Encoding APNG...");
   const apngBlob = await encodeAPNG(reel.frames, options.apngOptions);
   zip.file(`${filename}.png`, apngBlob);
 
+  // Add individual frames as PNGs and GIFs
+  onProgress?.(
+    currentStep,
+    totalSteps,
+    `Adding ${frameCount} individual frames...`
+  );
+  const pngsFolder = zip.folder("pngs");
+  const gifsFolder = zip.folder("gifs");
+
+  if (pngsFolder && gifsFolder) {
+    for (let i = 0; i < reel.frames.length; i++) {
+      const frame = reel.frames[i];
+      const paddedNum = String(i + 1).padStart(3, "0");
+
+      // Add PNG frame
+      const pngBlob =
+        typeof frame.image === "string"
+          ? await dataURLToBlob(frame.image)
+          : frame.image;
+      pngsFolder.file(`frame-${paddedNum}.png`, pngBlob);
+
+      // Add GIF frame (encode single frame as GIF)
+      const gifBlob = await encodeGIF([frame], options.gifOptions);
+      gifsFolder.file(`frame-${paddedNum}.gif`, gifBlob);
+
+      // Update progress for each frame
+      onProgress?.(
+        currentStep + i + 1,
+        totalSteps,
+        `Adding frame ${i + 1}/${frameCount}...`
+      );
+    }
+  }
+  currentStep += frameCount;
+
   // Add metadata JSON
   if (options.includeMetadata) {
-    onProgress?.(2, 4, "Generating metadata...");
+    onProgress?.(currentStep++, totalSteps, "Generating metadata...");
     const metadataJSON = exportMetadataJSON(reel);
     zip.file(`${filename}-metadata.json`, metadataJSON);
   }
 
   // Add HTML snapshot (if available and requested)
   if (options.includeHTML && reel.frames[0]?.metadata.htmlSnapshot) {
-    onProgress?.(3, 4, "Adding HTML snapshot...");
+    onProgress?.(currentStep++, totalSteps, "Adding HTML snapshot...");
     const htmlContent = generateHTMLViewer(reel);
     zip.file(`${filename}-viewer.html`, htmlContent);
   }
 
   // Generate ZIP
-  onProgress?.(4, 4, "Generating ZIP...");
+  onProgress?.(currentStep++, totalSteps, "Generating ZIP...");
   const zipBlob = await zip.generateAsync({
     type: "blob",
     compression: "DEFLATE",
