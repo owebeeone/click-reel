@@ -30,8 +30,11 @@ export function MarkerDebugDialog({
   captureWidth,
   captureHeight,
 }: MarkerDebugDialogProps) {
-  const [clickedX, setClickedX] = useState<number | null>(null);
-  const [clickedY, setClickedY] = useState<number | null>(null);
+  const [originalClickedX, setOriginalClickedX] = useState<number | null>(null);
+  const [originalClickedY, setOriginalClickedY] = useState<number | null>(null);
+  const [markerClickedX, setMarkerClickedX] = useState<number | null>(null);
+  const [markerClickedY, setMarkerClickedY] = useState<number | null>(null);
+  const [clickMode, setClickMode] = useState<"original" | "marker">("original");
   const [copied, setCopied] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
@@ -47,8 +50,13 @@ export function MarkerDebugDialog({
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
 
-    setClickedX(Math.round(x));
-    setClickedY(Math.round(y));
+    if (clickMode === "original") {
+      setOriginalClickedX(Math.round(x));
+      setOriginalClickedY(Math.round(y));
+    } else {
+      setMarkerClickedX(Math.round(x));
+      setMarkerClickedY(Math.round(y));
+    }
   };
 
   const debugInfo = {
@@ -70,14 +78,38 @@ export function MarkerDebugDialog({
       width: captureWidth,
       height: captureHeight,
     },
-    clicked_on_image: {
-      x: clickedX,
-      y: clickedY,
+    clicked_original_element: {
+      x: originalClickedX,
+      y: originalClickedY,
     },
-    difference: clickedX !== null && clickedY !== null ? {
-      x_diff: clickedX - viewportCoords.x,
-      y_diff: clickedY - viewportCoords.y,
-    } : null,
+    clicked_marker: {
+      x: markerClickedX,
+      y: markerClickedY,
+    },
+    difference_original:
+      originalClickedX !== null && originalClickedY !== null
+        ? {
+            x_diff: originalClickedX - viewportCoords.x,
+            y_diff: originalClickedY - viewportCoords.y,
+          }
+        : null,
+    difference_marker:
+      markerClickedX !== null && markerClickedY !== null
+        ? {
+            x_diff: markerClickedX - viewportCoords.x,
+            y_diff: markerClickedY - viewportCoords.y,
+          }
+        : null,
+    marker_offset:
+      originalClickedX !== null &&
+      originalClickedY !== null &&
+      markerClickedX !== null &&
+      markerClickedY !== null
+        ? {
+            x_diff: markerClickedX - originalClickedX,
+            y_diff: markerClickedY - originalClickedY,
+          }
+        : null,
     calculations: {
       viewport_plus_scroll: {
         x: viewportCoords.x + scrollPosition.x,
@@ -191,21 +223,44 @@ export function MarkerDebugDialog({
                   border: "2px solid #3b82f6",
                 }}
               />
-              {clickedX !== null && clickedY !== null && imgRef.current && (
-                <div
-                  style={{
-                    position: "absolute",
-                    left: `${(clickedX / imgRef.current.naturalWidth) * 100}%`,
-                    top: `${(clickedY / imgRef.current.naturalHeight) * 100}%`,
-                    width: "20px",
-                    height: "20px",
-                    border: "3px solid #10b981",
-                    borderRadius: "50%",
-                    transform: "translate(-50%, -50%)",
-                    pointerEvents: "none",
-                  }}
-                />
-              )}
+              {/* Original element click marker (green) */}
+              {originalClickedX !== null &&
+                originalClickedY !== null &&
+                imgRef.current && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: `${(originalClickedX / imgRef.current.naturalWidth) * 100}%`,
+                      top: `${(originalClickedY / imgRef.current.naturalHeight) * 100}%`,
+                      width: "20px",
+                      height: "20px",
+                      border: "3px solid #10b981",
+                      borderRadius: "50%",
+                      transform: "translate(-50%, -50%)",
+                      pointerEvents: "none",
+                      zIndex: 2,
+                    }}
+                  />
+                )}
+              {/* Marker click marker (blue) */}
+              {markerClickedX !== null &&
+                markerClickedY !== null &&
+                imgRef.current && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: `${(markerClickedX / imgRef.current.naturalWidth) * 100}%`,
+                      top: `${(markerClickedY / imgRef.current.naturalHeight) * 100}%`,
+                      width: "20px",
+                      height: "20px",
+                      border: "3px solid #3b82f6",
+                      borderRadius: "50%",
+                      transform: "translate(-50%, -50%)",
+                      pointerEvents: "none",
+                      zIndex: 2,
+                    }}
+                  />
+                )}
             </div>
           </div>
 
@@ -218,9 +273,60 @@ export function MarkerDebugDialog({
               color: "#475569",
             }}
           >
-            <strong>Instructions:</strong> Click on the image where you
-            originally clicked (where the marker should appear). The green
-            circle shows your click.
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>Click Mode:</strong>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                gap: "0.5rem",
+                marginBottom: "0.75rem",
+              }}
+            >
+              <button
+                onClick={() => setClickMode("original")}
+                style={{
+                  padding: "6px 12px",
+                  background: clickMode === "original" ? "#10b981" : "#e2e8f0",
+                  color: clickMode === "original" ? "white" : "#475569",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: clickMode === "original" ? "600" : "normal",
+                }}
+              >
+                🟢 Original Element
+              </button>
+              <button
+                onClick={() => setClickMode("marker")}
+                style={{
+                  padding: "6px 12px",
+                  background: clickMode === "marker" ? "#3b82f6" : "#e2e8f0",
+                  color: clickMode === "marker" ? "white" : "#475569",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: clickMode === "marker" ? "600" : "normal",
+                }}
+              >
+                🔵 Marker Position
+              </button>
+            </div>
+            <div style={{ fontSize: "13px" }}>
+              {clickMode === "original" ? (
+                <>
+                  Click where you <strong>originally clicked</strong> (the
+                  element/button). Green circle shows this.
+                </>
+              ) : (
+                <>
+                  Click where the <strong>marker appears</strong> (red circle in
+                  capture). Blue circle shows this.
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -294,7 +400,7 @@ export function MarkerDebugDialog({
               {JSON.stringify(debugInfo, null, 2)}
             </pre>
 
-            {clickedX !== null && clickedY !== null && (
+            {(originalClickedX !== null || markerClickedX !== null) && (
               <div
                 style={{
                   marginTop: "1rem",
@@ -309,15 +415,61 @@ export function MarkerDebugDialog({
                   📊 Analysis:
                 </div>
                 <div>
-                  Expected marker at: ({viewportCoords.x}, {viewportCoords.y})
+                  Expected (viewport): ({Math.round(viewportCoords.x)},{" "}
+                  {Math.round(viewportCoords.y)})
                 </div>
-                <div>
-                  You clicked at: ({clickedX}, {clickedY})
-                </div>
-                <div style={{ marginTop: "0.5rem", fontWeight: "bold" }}>
-                  Offset: ({clickedX - viewportCoords.x},{" "}
-                  {clickedY - viewportCoords.y})
-                </div>
+                {originalClickedX !== null && originalClickedY !== null && (
+                  <>
+                    <div
+                      style={{
+                        marginTop: "0.5rem",
+                        color: "#10b981",
+                        fontWeight: "600",
+                      }}
+                    >
+                      🟢 Original Element: ({originalClickedX},{" "}
+                      {originalClickedY})
+                    </div>
+                    <div>
+                      Offset: ({originalClickedX - viewportCoords.x},{" "}
+                      {originalClickedY - viewportCoords.y})
+                    </div>
+                  </>
+                )}
+                {markerClickedX !== null && markerClickedY !== null && (
+                  <>
+                    <div
+                      style={{
+                        marginTop: "0.5rem",
+                        color: "#3b82f6",
+                        fontWeight: "600",
+                      }}
+                    >
+                      🔵 Marker: ({markerClickedX}, {markerClickedY})
+                    </div>
+                    <div>
+                      Offset: ({markerClickedX - viewportCoords.x},{" "}
+                      {markerClickedY - viewportCoords.y})
+                    </div>
+                  </>
+                )}
+                {originalClickedX !== null &&
+                  originalClickedY !== null &&
+                  markerClickedX !== null &&
+                  markerClickedY !== null && (
+                    <div
+                      style={{
+                        marginTop: "0.75rem",
+                        borderTop: "1px solid #93c5fd",
+                        paddingTop: "0.5rem",
+                      }}
+                    >
+                      <div style={{ fontWeight: "bold" }}>
+                        Marker vs Element: ({markerClickedX - originalClickedX},{" "}
+                        {markerClickedY - originalClickedY})
+                      </div>
+                    </div>
+                  )}
               </div>
             )}
           </div>

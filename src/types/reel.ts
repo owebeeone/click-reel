@@ -40,6 +40,8 @@ export interface FrameMetadata {
   scrollPosition: { x: number; y: number };
   /** Whether this is a pre-click or post-click frame */
   captureType: "pre-click" | "post-click";
+  /** Marker coordinates (for debugging positioning) */
+  markerCoords?: { x: number; y: number };
   /** Optional sanitized HTML snapshot */
   htmlSnapshot?: string;
 }

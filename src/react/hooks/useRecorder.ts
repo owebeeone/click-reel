@@ -318,18 +318,42 @@ export function useRecorder(): RecorderAPI {
     dispatch({ type: ActionType.CLEAR_ERROR });
   }, [dispatch]);
 
+  // Guard to prevent overlapping captures
+  const capturingRef = useRef(false);
+
   // Handler for when a click is captured while armed
   const handleClickCapture = useCallback(
     async (event: PointerEvent) => {
-      if (!state.currentReel) return;
+      console.log(
+        "🎯 [handleClickCapture] ENTERED - currentReel:",
+        !!state.currentReel,
+        "capturing:",
+        capturingRef.current
+      );
+
+      if (!state.currentReel) {
+        console.log("⚠️ [handleClickCapture] No currentReel - exiting");
+        return;
+      }
+
+      // Prevent overlapping captures
+      if (capturingRef.current) {
+        console.log(
+          "⚠️ [handleClickCapture] Already capturing - IGNORING duplicate"
+        );
+        return;
+      }
 
       try {
+        capturingRef.current = true;
+        console.log("🔄 [handleClickCapture] Starting capture sequence...");
+
         dispatch({
           type: ActionType.SET_LOADING,
           payload: { key: "capturing", value: true },
         });
 
-        console.log("Capturing click at", {
+        console.log("📍 [handleClickCapture] Capturing click at", {
           x: event.clientX,
           y: event.clientY,
         });
@@ -392,10 +416,15 @@ export function useRecorder(): RecorderAPI {
           `✅ Post-click sequence complete. Final frame count should be visible in state.`
         );
 
-        // Automatically disarm after capture sequence completes
-        dispatch({ type: ActionType.DISARM });
+        // Don't automatically disarm - let user control when to stop
+        // This allows capturing multiple interactions (e.g., open dialog, close dialog)
+        console.log(
+          "🔓 [handleClickCapture] Capture complete, staying ARMED for next interaction..."
+        );
 
-        console.log("Click capture sequence completed!");
+        console.log(
+          "✅ [handleClickCapture] Click capture sequence COMPLETED!"
+        );
       } catch (error) {
         console.error("Failed to capture click frame:", error);
         dispatch({
@@ -407,6 +436,7 @@ export function useRecorder(): RecorderAPI {
           },
         });
       } finally {
+        capturingRef.current = false; // Release the lock
         dispatch({
           type: ActionType.SET_LOADING,
           payload: { key: "capturing", value: false },

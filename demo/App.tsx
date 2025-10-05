@@ -7,8 +7,6 @@ import {
   ClickReelProvider,
   ClickReelRecorder,
   ClickReelInventory,
-  MarkerDebugDialog,
-  CaptureDebugDialog,
   SettingsPanel,
   useRecorder,
   useStorage,
@@ -31,10 +29,23 @@ function DemoContent({
   const recorder = useRecorder();
   const storage = useStorage();
   const [storageInfo, setStorageInfo] = useState<string>("");
-  const [showDebugDialog, setShowDebugDialog] = useState(false);
-  const [showCaptureDebug, setShowCaptureDebug] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
+  const [showTestDialog1, setShowTestDialog1] = useState(false);
+  const [showTestDialog2, setShowTestDialog2] = useState(false);
+  const [counterMs, setCounterMs] = useState(0);
+
+  // Diagnostic: Track dialog state changes
+  useEffect(() => {
+    console.log(
+      "🚪 [Dialog State] TestDialog1:",
+      showTestDialog1,
+      "TestDialog2:",
+      showTestDialog2,
+      "Recorder:",
+      recorder.state
+    );
+  }, [showTestDialog1, showTestDialog2, recorder.state]);
 
   // Preferences hook
   const { preferences, savePreferences, resetToDefaults, isLoaded } =
@@ -60,6 +71,26 @@ function DemoContent({
       );
     }
   }, [isLoaded]); // Run when preferences are loaded
+
+  // Counter for test dialog 2 - stops at 5 seconds
+  useEffect(() => {
+    if (!showTestDialog2) {
+      setCounterMs(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setCounterMs((prev) => {
+        if (prev >= 5000) {
+          clearInterval(interval);
+          return prev; // Stop at 5000ms
+        }
+        return prev + 50;
+      });
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [showTestDialog2]);
 
   // Set up keyboard shortcuts
   useKeyboardShortcuts({
@@ -702,30 +733,6 @@ function DemoContent({
         />
       </section>
 
-      {/* Debug Tool */}
-      {recorder.currentReel && recorder.currentReel.frames.length > 0 && (
-        <section style={{ marginTop: "2rem" }}>
-          <button
-            onClick={() => setShowDebugDialog(true)}
-            style={{
-              padding: "12px 24px",
-              background: "#8b5cf6",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: 600,
-            }}
-          >
-            🐛 Open Marker Debug Tool
-          </button>
-          <p style={{ fontSize: "14px", color: "#666", marginTop: "0.5rem" }}>
-            Click to debug marker positioning on the last captured frame
-          </p>
-        </section>
-      )}
-
       {/* Settings */}
       <section style={{ marginTop: "2rem" }}>
         <button
@@ -746,29 +753,6 @@ function DemoContent({
         <p style={{ fontSize: "14px", color: "#666", marginTop: "0.5rem" }}>
           Configure preferences: marker appearance, capture timing, export
           format, etc.
-        </p>
-      </section>
-
-      {/* Capture Diagnostics */}
-      <section style={{ marginTop: "2rem" }}>
-        <button
-          onClick={() => setShowCaptureDebug(true)}
-          style={{
-            padding: "12px 24px",
-            background: "#f59e0b",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontSize: "16px",
-            fontWeight: 600,
-          }}
-        >
-          🔍 Open Capture Diagnostics
-        </button>
-        <p style={{ fontSize: "14px", color: "#666", marginTop: "0.5rem" }}>
-          Run diagnostics to see DOM state, timing, and visibility during
-          capture
         </p>
       </section>
 
@@ -860,55 +844,6 @@ function DemoContent({
         </div>
       )}
 
-      {/* Debug Dialogs */}
-      <CaptureDebugDialog
-        isOpen={showCaptureDebug}
-        onClose={() => setShowCaptureDebug(false)}
-      />
-      {recorder.currentReel && recorder.currentReel.frames.length > 0 && (
-        <MarkerDebugDialog
-          isOpen={showDebugDialog}
-          onClose={() => setShowDebugDialog(false)}
-          frameDataUrl={
-            typeof recorder.currentReel.frames[
-              recorder.currentReel.frames.length - 1
-            ].image === "string"
-              ? (recorder.currentReel.frames[
-                  recorder.currentReel.frames.length - 1
-                ].image as string)
-              : ""
-          }
-          originalClickX={
-            recorder.currentReel.frames[recorder.currentReel.frames.length - 1]
-              .metadata.viewportCoords.x
-          }
-          originalClickY={
-            recorder.currentReel.frames[recorder.currentReel.frames.length - 1]
-              .metadata.viewportCoords.y
-          }
-          viewportCoords={
-            recorder.currentReel.frames[recorder.currentReel.frames.length - 1]
-              .metadata.viewportCoords
-          }
-          scrollPosition={
-            recorder.currentReel.frames[recorder.currentReel.frames.length - 1]
-              .metadata.scrollPosition
-          }
-          markerCoords={
-            recorder.currentReel.frames[recorder.currentReel.frames.length - 1]
-              .metadata.viewportCoords
-          }
-          captureWidth={
-            recorder.currentReel.frames[recorder.currentReel.frames.length - 1]
-              .metadata.viewportSize.width
-          }
-          captureHeight={
-            recorder.currentReel.frames[recorder.currentReel.frames.length - 1]
-              .metadata.viewportSize.height
-          }
-        />
-      )}
-
       {/* Recorder Component */}
       {/* Recorder Testing - Now using floating recorder at top */}
 
@@ -938,9 +873,13 @@ function DemoContent({
               borderRadius: "4px",
               cursor: "pointer",
             }}
-            onClick={() => console.log("Button 1 clicked")}
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log("🟢 [BUTTON CLICK] Opening TestDialog1");
+              setShowTestDialog1(true);
+            }}
           >
-            Test Button 1
+            Test Button 1 (Static Dialog)
           </button>
           <button
             style={{
@@ -952,9 +891,12 @@ function DemoContent({
               borderRadius: "4px",
               cursor: "pointer",
             }}
-            onClick={() => console.log("Button 2 clicked")}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowTestDialog2(true);
+            }}
           >
-            Test Button 2
+            Test Button 2 (Animated Dialog)
           </button>
           <input
             type="text"
@@ -970,30 +912,150 @@ function DemoContent({
         </div>
       </section>
 
-      {/* Feature Status */}
-      <section
-        style={{
-          marginTop: "2rem",
-          padding: "1.5rem",
-          background: "#f8f9fa",
-          borderRadius: "8px",
-        }}
-      >
-        <h2 style={{ marginBottom: "1rem", fontSize: "1.5rem" }}>
-          Implementation Status
-        </h2>
-        <ul style={{ lineHeight: "1.8" }}>
-          <li>✅ Phase 0: Project Setup & TypeScript Config</li>
-          <li>✅ Phase 1: Core Capture Engine</li>
-          <li>✅ Phase 2: Event Management (Standalone)</li>
-          <li>✅ Phase 3: Encoding Services (GIF/APNG)</li>
-          <li>✅ Phase 4: IndexedDB Storage</li>
-          <li>✅ Phase 5: Export & Download</li>
-          <li>✅ Phase 6: React Context & State Management</li>
-          <li>🚧 Phase 7: Recorder UI Components (Next)</li>
-          <li>⏳ Phase 8-14: Advanced Features</li>
-        </ul>
-      </section>
+      {/* Test Dialog 1 - Static */}
+      {showTestDialog1 && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => {
+            console.log("🔴 [BACKDROP CLICK] Closing TestDialog1");
+            setShowTestDialog1(false);
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "12px",
+              padding: "2rem",
+              maxWidth: "400px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ margin: "0 0 1rem 0", color: "#1e293b" }}>
+              Test Dialog 1
+            </h2>
+            <p style={{ margin: "0 0 1.5rem 0", color: "#64748b" }}>
+              This is a static dialog for testing click capture. The content
+              doesn't change, so settlement detection should recognize it
+              immediately.
+            </p>
+            <button
+              onClick={(e) => {
+                console.log("🔴 [CLOSE BUTTON] Closing TestDialog1", {
+                  armed: recorder.state === "armed",
+                  recording: recorder.state === "recording",
+                });
+                e.stopPropagation();
+                setShowTestDialog1(false);
+                console.log(
+                  "🔴 [CLOSE BUTTON] setShowTestDialog1(false) called"
+                );
+              }}
+              style={{
+                padding: "8px 16px",
+                background: "#3b82f6",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Test Dialog 2 - Animated Counter */}
+      {showTestDialog2 && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setShowTestDialog2(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "12px",
+              padding: "2rem",
+              maxWidth: "400px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ margin: "0 0 1rem 0", color: "#1e293b" }}>
+              Test Dialog 2 - Animated
+            </h2>
+            <p style={{ margin: "0 0 1rem 0", color: "#64748b" }}>
+              This dialog has a counter that updates every 50ms for 5 seconds.
+              Settlement detection should wait until the counter stops.
+            </p>
+            <div
+              style={{
+                padding: "1rem",
+                background: counterMs >= 5000 ? "#dcfce7" : "#f1f5f9",
+                borderRadius: "8px",
+                marginBottom: "1rem",
+                textAlign: "center",
+                border: counterMs >= 5000 ? "2px solid #22c55e" : "none",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: counterMs >= 5000 ? "#16a34a" : "#64748b",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                {counterMs >= 5000
+                  ? "✅ Counter stopped!"
+                  : "Counter (updates every 50ms):"}
+              </div>
+              <div
+                style={{
+                  fontSize: "32px",
+                  fontWeight: "bold",
+                  color: counterMs >= 5000 ? "#16a34a" : "#1e293b",
+                }}
+              >
+                {counterMs} ms
+              </div>
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowTestDialog2(false);
+              }}
+              style={{
+                padding: "8px 16px",
+                background: "#3b82f6",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                width: "100%",
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

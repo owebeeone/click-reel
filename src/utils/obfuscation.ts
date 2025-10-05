@@ -30,6 +30,7 @@ export const DEFAULT_OBFUSCATION_CONFIG: ObfuscationConfig = {
  * Store original values for restoration
  */
 export interface ObfuscationBackup {
+  timestamp: number; // For tracking backup instances in logs
   textNodes: Array<{ node: Text; originalText: string }>;
   inputs: Array<{
     el: HTMLInputElement | HTMLTextAreaElement;
@@ -44,20 +45,20 @@ export interface ObfuscationBackup {
  */
 function shouldObfuscateByPII(element: HTMLElement): boolean | null {
   let current: HTMLElement | null = element;
-  
+
   while (current) {
     // Check for explicit PII markers
-    if (current.classList.contains('pii-enable')) {
+    if (current.classList.contains("pii-enable")) {
       return true; // Obfuscate
     }
-    if (current.classList.contains('pii-disable')) {
+    if (current.classList.contains("pii-disable")) {
       return false; // Don't obfuscate
     }
-    
+
     // Move up the tree
     current = current.parentElement;
   }
-  
+
   return null; // No explicit PII marker found
 }
 
@@ -327,6 +328,7 @@ export function obfuscateInPlace(
   config: ObfuscationConfig = DEFAULT_OBFUSCATION_CONFIG
 ): ObfuscationBackup {
   const backup: ObfuscationBackup = {
+    timestamp: Date.now(),
     textNodes: [],
     inputs: [],
   };
@@ -392,7 +394,9 @@ export function obfuscateInPlace(
   }
 
   console.log(
-    `🔒 Obfuscated ${backup.textNodes.length} text nodes and ${backup.inputs.length} inputs in-place`
+    `🔒 Obfuscated ${backup.textNodes.length} text nodes and ${backup.inputs.length} inputs in-place`,
+    "Backup ID:",
+    backup.timestamp
   );
   return backup;
 }
@@ -401,6 +405,12 @@ export function obfuscateInPlace(
  * Restore original text from backup
  */
 export function restoreObfuscation(backup: ObfuscationBackup): void {
+  console.log(
+    `🔓 [START RESTORE] Restoring ${backup.textNodes.length} text nodes and ${backup.inputs.length} inputs`,
+    "Backup ID:",
+    backup.timestamp
+  );
+
   // Restore text nodes
   backup.textNodes.forEach(({ node, originalText }) => {
     if (node.parentNode) {
@@ -419,7 +429,9 @@ export function restoreObfuscation(backup: ObfuscationBackup): void {
   });
 
   console.log(
-    `🔓 Restored ${backup.textNodes.length} text nodes and ${backup.inputs.length} inputs`
+    `🔓 [END RESTORE] Restored ${backup.textNodes.length} text nodes and ${backup.inputs.length} inputs`,
+    "Backup ID:",
+    backup.timestamp
   );
 }
 

@@ -51,6 +51,18 @@ export async function captureFrame(
   const scrollPosition = getScrollPosition();
 
   // Build metadata
+  // Calculate marker coordinates
+  // The marker is always added to document.documentElement, which gets transformed
+  // by translate(0, -scrollY). To position the marker at viewport coordinates in
+  // the final capture, we always need to use viewport + scroll.
+  // After transform: (viewport + scroll - scroll) = viewport position ✓
+  // This works for BOTH regular content AND fixed elements because they both
+  // appear at viewport coordinates in the final transformed capture.
+  const markerCoords = {
+    x: viewportCoords.x + scrollPosition.x,
+    y: viewportCoords.y + scrollPosition.y,
+  };
+
   const metadata: FrameMetadata = {
     viewportCoords,
     relativeCoords,
@@ -59,6 +71,7 @@ export async function captureFrame(
     viewportSize,
     scrollPosition,
     captureType,
+    markerCoords, // Store for debugging
   };
 
   // Add marker temporarily if needed
@@ -69,18 +82,11 @@ export async function captureFrame(
       ...options.markerStyle,
     };
 
-    // With scroll transform applied (and counter-transform on fixed elements),
-    // position marker at viewport + scroll coordinates
-    const markerCoords = {
-      x: viewportCoords.x + scrollPosition.x,
-      y: viewportCoords.y + scrollPosition.y,
-    };
-
     console.log("Marker positioning:", {
       viewportCoords,
       scrollPosition,
       markerCoords,
-      withTransform: true,
+      strategy: "viewport + scroll (works for both regular and fixed elements)",
     });
 
     markerElement = createMarkerElement(

@@ -112,6 +112,12 @@ export function ClickReelInventory({
           timestamp: frame.timestamp,
           width: frame.metadata.viewportSize.width,
           height: frame.metadata.viewportSize.height,
+          metadata: {
+            viewportCoords: frame.metadata.viewportCoords,
+            scrollPosition: frame.metadata.scrollPosition,
+            markerCoords: frame.metadata.markerCoords,
+            viewportSize: frame.metadata.viewportSize,
+          },
           clickEvent: {
             x: frame.metadata.viewportCoords.x,
             y: frame.metadata.viewportCoords.y,

@@ -13,8 +13,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Bug,
+  Target,
 } from "lucide-react";
 import { CaptureDebugDialog } from "./CaptureDebugDialog";
+import { MarkerDebugDialog } from "./MarkerDebugDialog";
 
 /**
  * Frame format for the ReelPlayer
@@ -30,6 +32,13 @@ export interface ReelPlayerFrame {
     y: number;
     elementPath: string;
     elementText?: string;
+  };
+  // Full metadata for debugging
+  metadata?: {
+    viewportCoords: { x: number; y: number };
+    scrollPosition: { x: number; y: number };
+    markerCoords?: { x: number; y: number };
+    viewportSize: { width: number; height: number };
   };
 }
 
@@ -63,6 +72,7 @@ export function ReelPlayer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [showMetadata, setShowMetadata] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [showMarkerDebug, setShowMarkerDebug] = useState(false);
   const intervalRef = useRef<number | null>(null);
 
   // Stop playback when closing
@@ -529,6 +539,32 @@ export function ReelPlayer({
                 <Download size={16} />
                 Export APNG
               </button>
+              <button
+                onClick={() => {
+                  const frame = frames[currentFrame];
+                  if (!frame?.metadata) {
+                    alert("No metadata available for this frame");
+                    return;
+                  }
+                  setShowMarkerDebug(true);
+                }}
+                style={{
+                  padding: "8px 12px",
+                  background: "#6366f1",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontSize: "14px",
+                }}
+                title="Debug marker positioning"
+              >
+                <Target size={16} />
+                Debug Marker
+              </button>
             </div>
           </div>
         </div>
@@ -539,6 +575,37 @@ export function ReelPlayer({
         isOpen={showDiagnostics}
         onClose={() => setShowDiagnostics(false)}
       />
+
+      {/* Marker Debug Dialog */}
+      {showMarkerDebug && frames[currentFrame]?.metadata && (
+        <MarkerDebugDialog
+          isOpen={showMarkerDebug}
+          onClose={() => setShowMarkerDebug(false)}
+          frameDataUrl={frames[currentFrame].dataUrl}
+          originalClickX={
+            frames[currentFrame].metadata!.viewportCoords.x +
+            frames[currentFrame].metadata!.scrollPosition.x
+          }
+          originalClickY={
+            frames[currentFrame].metadata!.viewportCoords.y +
+            frames[currentFrame].metadata!.scrollPosition.y
+          }
+          viewportCoords={frames[currentFrame].metadata!.viewportCoords}
+          scrollPosition={frames[currentFrame].metadata!.scrollPosition}
+          markerCoords={
+            frames[currentFrame].metadata!.markerCoords || {
+              x:
+                frames[currentFrame].metadata!.viewportCoords.x +
+                frames[currentFrame].metadata!.scrollPosition.x,
+              y:
+                frames[currentFrame].metadata!.viewportCoords.y +
+                frames[currentFrame].metadata!.scrollPosition.y,
+            }
+          }
+          captureWidth={frames[currentFrame].metadata!.viewportSize.width}
+          captureHeight={frames[currentFrame].metadata!.viewportSize.height}
+        />
+      )}
     </div>
   );
 }
