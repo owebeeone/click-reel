@@ -326,6 +326,12 @@ export function useRecorder(): RecorderAPI {
   // Guard to prevent overlapping captures
   const capturingRef = useRef(false);
 
+  // Ref to access current UI state without causing callback recreation
+  const uiStateRef = useRef(state.ui);
+  useEffect(() => {
+    uiStateRef.current = state.ui;
+  }, [state.ui]);
+
   // Handler for when a click is captured while armed
   const handleClickCapture = useCallback(
     async (event: PointerEvent) => {
@@ -375,7 +381,7 @@ export function useRecorder(): RecorderAPI {
             size: state.currentReel.settings.markerSize,
             color: state.currentReel.settings.markerColor,
           },
-          obfuscationEnabled: state.ui?.obfuscationActive || false,
+          obfuscationEnabled: uiStateRef.current?.obfuscationActive || false,
         };
 
         // Capture the PRE-CLICK frame with the marker

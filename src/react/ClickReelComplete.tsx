@@ -41,6 +41,8 @@ export interface ClickReelCompleteProps {
   initialPosition?: { x: number; y: number };
   /** Whether the recorder should start minimized */
   startMinimized?: boolean;
+  /** Callback when preview obfuscation is toggled (debug feature) */
+  onPreviewObfuscationToggle?: (isActive: boolean) => void;
 }
 
 /**
@@ -70,6 +72,7 @@ export interface ClickReelCompleteProps {
 export function ClickReelComplete({
   initialPosition,
   startMinimized = false,
+  onPreviewObfuscationToggle,
 }: ClickReelCompleteProps) {
   // Get context to read preferences
   const { state } = useClickReelContext();
@@ -134,6 +137,7 @@ export function ClickReelComplete({
         <ClickReelRecorder
           position={recorderPosition}
           initialCollapsed={shouldStartMinimized}
+          onPreviewObfuscationToggle={onPreviewObfuscationToggle}
         />
       </DndContext>
 

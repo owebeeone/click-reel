@@ -26,6 +26,7 @@ let globalAttachedRoot: HTMLElement | null = null;
 export function useClickCapture(options: ClickCaptureOptions): void {
   const { armed, root, onCapture, isRecording } = options;
   const listenerAttachedRef = useRef(false);
+  const capturingInProgressRef = useRef(false);
 
   useEffect(() => {
     // Only attach listeners if recording and armed
@@ -108,10 +109,12 @@ export function useClickCapture(options: ClickCaptureOptions): void {
       // Prevent the original event from propagating
       event.preventDefault();
       event.stopPropagation();
+      event.stopImmediatePropagation();
       console.log("🛑 [useClickCapture] Prevented original event");
 
       // Start capture immediately
       console.log("✅ [useClickCapture] Invoking capture callback (sync)");
+      capturingInProgressRef.current = true; // Mark capture as in progress
       onCapture(event);
 
       // Replay the click after a short delay to let capture start
@@ -140,7 +143,40 @@ export function useClickCapture(options: ClickCaptureOptions): void {
 
         clickTarget.dispatchEvent(newClickEvent);
         console.log("✅ [useClickCapture] Click replayed successfully");
+
+        // Clear capturing flag after a delay to ensure all events are processed
+        setTimeout(() => {
+          capturingInProgressRef.current = false;
+          console.log("🏁 [useClickCapture] Capture sequence complete");
+        }, 100); // Wait for user's pointer/mouse up events to be processed
       }, 50); // Small delay to let capture sequence start
+    };
+
+    // Also handle mousedown to prevent it from generating additional events
+    const handleMouseDown = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+
+      // Skip replayed events
+      if ((event as any).__clickReelReplayed) {
+        return;
+      }
+
+      // Allow Click Reel UI events
+      const isClickReelUI =
+        target.closest('[data-screenshot-exclude="true"]') ||
+        target.closest(".pii-disable");
+
+      if (isClickReelUI) {
+        return;
+      }
+
+      // Block mousedown on page content (pointerdown already handled it)
+      console.log(
+        "🛑 [useClickCapture] Blocking mousedown (using pointerdown instead)"
+      );
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
     };
 
     // CRITICAL: Also intercept click events and only allow replayed ones
@@ -175,8 +211,73 @@ export function useClickCapture(options: ClickCaptureOptions): void {
       event.stopImmediatePropagation();
     };
 
-    // Attach both listeners in capture phase
+    // Block pointerup to prevent buttons from responding to it
+    const handlePointerUp = (event: PointerEvent) => {
+      const target = event.target as HTMLElement;
+
+      // Skip replayed events
+      if ((event as any).__clickReelReplayed) {
+        return;
+      }
+
+      // Allow Click Reel UI events
+      const isClickReelUI =
+        target.closest('[data-screenshot-exclude="true"]') ||
+        target.closest(".pii-disable");
+
+      if (isClickReelUI) {
+        return;
+      }
+
+      // Block pointerup on page content
+      console.log("🛑 [useClickCapture] Blocking pointerup");
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+    };
+
+    // Block mouseup to prevent buttons from responding to it
+    const handleMouseUp = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+
+      // Skip replayed events
+      if ((event as any).__clickReelReplayed) {
+        return;
+      }
+
+      // Allow Click Reel UI events
+      const isClickReelUI =
+        target.closest('[data-screenshot-exclude="true"]') ||
+        target.closest(".pii-disable");
+
+      if (isClickReelUI) {
+        return;
+      }
+
+      // Block mouseup on page content
+      console.log("🛑 [useClickCapture] Blocking mouseup");
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+    };
+
+    // Attach all listeners in capture phase to block ALL forms of click events
     root.addEventListener("pointerdown", handlePointerDown, {
+      capture: true, // Capture phase - intercept before target
+      passive: false, // MUST be false to allow preventDefault
+    });
+
+    root.addEventListener("mousedown", handleMouseDown, {
+      capture: true, // Capture phase - intercept before target
+      passive: false, // MUST be false to allow preventDefault
+    });
+
+    root.addEventListener("pointerup", handlePointerUp, {
+      capture: true, // Capture phase - intercept before target
+      passive: false, // MUST be false to allow preventDefault
+    });
+
+    root.addEventListener("mouseup", handleMouseUp, {
       capture: true, // Capture phase - intercept before target
       passive: false, // MUST be false to allow preventDefault
     });
@@ -190,8 +291,47 @@ export function useClickCapture(options: ClickCaptureOptions): void {
 
     // Cleanup function - MUST remove the exact same functions that were added
     return () => {
+      // CRITICAL: Only remove listeners if we're not actively capturing
+      // This prevents a race condition where listeners are removed mid-capture
+      // allowing original events to slip through
+      if (capturingInProgressRef.current) {
+        console.log("⚠️ Skipping listener removal - capture in progress");
+        // Schedule cleanup for later
+        setTimeout(() => {
+          console.log("🔄 Retrying listener removal after capture");
+          root.removeEventListener("pointerdown", handlePointerDown, {
+            capture: true,
+          });
+          root.removeEventListener("mousedown", handleMouseDown, {
+            capture: true,
+          });
+          root.removeEventListener("pointerup", handlePointerUp, {
+            capture: true,
+          });
+          root.removeEventListener("mouseup", handleMouseUp, {
+            capture: true,
+          });
+          root.removeEventListener("click", handleClick, {
+            capture: true,
+          });
+          listenerAttachedRef.current = false;
+          globalListenerAttached = false;
+          globalAttachedRoot = null;
+        }, 200); // Wait longer than capture sequence
+        return;
+      }
+
       console.log("Removing click capture listeners");
       root.removeEventListener("pointerdown", handlePointerDown, {
+        capture: true, // Must match the addEventListener options
+      });
+      root.removeEventListener("mousedown", handleMouseDown, {
+        capture: true, // Must match the addEventListener options
+      });
+      root.removeEventListener("pointerup", handlePointerUp, {
+        capture: true, // Must match the addEventListener options
+      });
+      root.removeEventListener("mouseup", handleMouseUp, {
         capture: true, // Must match the addEventListener options
       });
       root.removeEventListener("click", handleClick, {

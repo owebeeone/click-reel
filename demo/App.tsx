@@ -27,7 +27,7 @@ function DemoContent() {
 
   // Toast notifications for state changes
   const prevRecorderVisible = useRef(state.ui.recorderVisible);
-  const prevObfuscation = useRef(state.preferences.obfuscationEnabled);
+  const prevObfuscation = useRef(state.ui.obfuscationActive);
   const prevSettingsVisible = useRef(state.ui.settingsVisible);
   const prevInventoryVisible = useRef(state.ui.inventoryVisible);
   const prevRecorderState = useRef(recorder.state);
@@ -43,14 +43,14 @@ function DemoContent() {
   }, [state.ui.recorderVisible]);
 
   useEffect(() => {
-    if (prevObfuscation.current !== state.preferences.obfuscationEnabled) {
+    if (prevObfuscation.current !== state.ui.obfuscationActive) {
       toast.success(
-        `Obfuscation ${state.preferences.obfuscationEnabled ? "enabled" : "disabled"}`,
+        `Obfuscation ${state.ui.obfuscationActive ? "enabled" : "disabled"}`,
         { duration: 2000 }
       );
-      prevObfuscation.current = state.preferences.obfuscationEnabled;
+      prevObfuscation.current = state.ui.obfuscationActive;
     }
-  }, [state.preferences.obfuscationEnabled]);
+  }, [state.ui.obfuscationActive]);
 
   useEffect(() => {
     if (prevSettingsVisible.current !== state.ui.settingsVisible) {
@@ -138,6 +138,8 @@ function DemoContent() {
   const handleAddFrame = async () => {
     try {
       await recorder.addFrame();
+      const frameCount = recorder.currentReel?.frames.length || 0;
+      toast.success(`Frame added (${frameCount} total)`, { duration: 1500 });
     } catch (error) {
       toast.error(
         `Failed to add frame: ${error instanceof Error ? error.message : String(error)}`
@@ -958,7 +960,19 @@ function AppContent() {
       />
       <DemoContent />
       {/* ClickReelComplete handles all recorder, settings, and inventory UI */}
-      <ClickReelComplete />
+      <ClickReelComplete
+        onPreviewObfuscationToggle={(isActive) => {
+          toast(
+            isActive
+              ? "🔒 Preview mode: Showing obfuscated view"
+              : "🔓 Preview mode: Restored original view",
+            {
+              duration: 2000,
+              icon: isActive ? "🔒" : "🔓",
+            }
+          );
+        }}
+      />
     </div>
   );
 }
