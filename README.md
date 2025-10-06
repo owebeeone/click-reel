@@ -5,6 +5,10 @@ See [click-reel](https://github.com/owebeeone/click-reel)
 
 **Browser-side interaction recorder with 2-line integration** 
 
+
+[![GitHub Repo](https://img.shields.io/badge/Repo-owebeeone%2Fclick--reel-181717?logo=github)](https://github.com/owebeeone/click-reel)
+
+
 Capture annotated screenshots of user interactions and export as GIF, APNG, or ZIP bundles. Includes draggable UI, PII obfuscation, and full keyboard control.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
@@ -12,9 +16,9 @@ Capture annotated screenshots of user interactions and export as GIF, APNG, or Z
 
 ## Status
 
-🎉 **Phase 11 (Integration & Polish) - In Progress**
+🎉 **MLP - Usable - Polish In Progress**
 
-The library is now feature-complete with all core functionality implemented! Currently in final integration and polish phase.
+The library is now feature-complete with all core functionality implemented! Currently in polish phase.
 
 ## Features
 
@@ -37,8 +41,6 @@ The library is now feature-complete with all core functionality implemented! Cur
 ```bash
 npm install @owebeeone/click-reel
 ```
-
-> **Note**: Library is under active development. Public npm installation will be available after Phase 14 (npm publish).
 
 ## Quick Start
 
