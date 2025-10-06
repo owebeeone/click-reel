@@ -429,15 +429,15 @@ const handleCollapsedChange = (collapsed: boolean) => {
 
 ### Keyboard Shortcuts Reference
 
-| Action | Shortcut | Available When |
-|--------|----------|----------------|
-| Toggle Recorder | `Ctrl+Shift+R` | Always |
-| Start/Stop Recording | `Ctrl+Shift+S` | Recorder visible |
-| Arm Capture | `Ctrl+Shift+A` | Recording active |
-| Add Frame | `Ctrl+Shift+F` | Recording active |
-| Toggle Obfuscation | `Ctrl+Shift+O` | Recorder visible |
-| Open Settings | `Ctrl+Shift+G` | Recorder visible |
-| Open Inventory | `Ctrl+Shift+E` | Recorder visible |
+| Action | Shortcut |
+|--------|----------|
+| Toggle Recorder | `Ctrl+Shift+R` |
+| Start/Stop Recording | `Ctrl+Shift+S` |
+| Arm Capture | `Ctrl+Shift+A` |
+| Add Frame | `Ctrl+Shift+F` |
+| Toggle Obfuscation | `Ctrl+Shift+O` |
+| Open Settings | `Ctrl+Shift+G` |
+| Open Inventory | `Ctrl+Shift+E` |
 
 > **Note**: These shortcuts work cross-platform with `Ctrl+Shift` on both macOS and Windows/Linux.
 
