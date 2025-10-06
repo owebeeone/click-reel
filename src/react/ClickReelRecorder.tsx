@@ -87,17 +87,8 @@ export function ClickReelRecorder({
         });
       },
       onToggleObfuscation: () => {
-        console.log(
-          "🔐 Toggling obfuscation from:",
-          state.preferences.obfuscationEnabled,
-          "to:",
-          !state.preferences.obfuscationEnabled
-        );
         dispatch({
-          type: ActionType.UPDATE_PREFERENCES,
-          payload: {
-            obfuscationEnabled: !state.preferences.obfuscationEnabled,
-          },
+          type: ActionType.TOGGLE_OBFUSCATION,
         });
       },
       onStartRecording: () => {

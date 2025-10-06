@@ -179,7 +179,7 @@ export function useRecorder(): RecorderAPI {
           scale: state.currentReel.settings.scale,
           maxWidth: state.currentReel.settings.maxWidth,
           maxHeight: state.currentReel.settings.maxHeight,
-          obfuscationEnabled: state.currentReel.settings.obfuscationEnabled,
+          obfuscationEnabled: state.ui?.obfuscationActive || false,
         },
         state.currentReel.id,
         state.currentReel.frames.length,

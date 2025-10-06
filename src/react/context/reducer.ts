@@ -50,10 +50,6 @@ function createInitialState(): ClickReelState {
         const parsed = JSON.parse(stored);
         preferences = { ...DEFAULT_PREFERENCES, ...parsed };
         recorderVisible = preferences.recorderUI?.showOnStartup !== false;
-        console.log("✅ Click Reel: Loaded preferences synchronously", {
-          showOnStartup: preferences.recorderUI?.showOnStartup,
-          startMinimized: preferences.recorderUI?.startMinimized,
-        });
       }
     } catch (error) {
       console.warn("Failed to load Click Reel preferences:", error);
@@ -76,7 +72,7 @@ function createInitialState(): ClickReelState {
       recorderVisible,
       inventoryVisible: false,
       settingsVisible: false,
-      obfuscationActive: false,
+      obfuscationActive: preferences.obfuscationEnabled,
       selectedReelId: null,
       recorderPosition: { x: 20, y: 20 },
       settling: false,
