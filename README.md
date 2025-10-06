@@ -1,6 +1,3 @@
-# **THIS IS NOT THE REPO YOU'RE LOOKING FOR**
-See [click-reel](https://github.com/owebeeone/click-reel)
-
 # @owebeeone/click-reel
 
 **Browser-side interaction recorder with 2-line integration** 
