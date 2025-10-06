@@ -20,6 +20,14 @@ Capture annotated screenshots of user interactions and export as GIF, APNG, or Z
 
 The library is now feature-complete with all core functionality implemented! Currently in polish phase.
 
+## See It In Action
+
+Here's an example recording captured with Click Reel, showing the before-click frame, the click marker, and the settled post-click state:
+
+![Example Recording](https://raw.githubusercontent.com/owebeeone/click-reel/refs/heads/main/docs/resources/Recording-2025-10-06-00_39_39.png)
+
+*A 3-frame recording showing: initial state → click marker → final settled state*
+
 ## Features
 
 - ✅ **Smart Capture** - Pre and post-interaction screenshots with intelligent settling detection
@@ -435,6 +443,23 @@ const handleCollapsedChange = (collapsed: boolean) => {
 | Open Inventory | `Ctrl+Shift+E` | Recorder visible |
 
 > **Note**: These shortcuts work cross-platform with `Ctrl+Shift` on both macOS and Windows/Linux.
+
+## Interface
+
+### Inventory Management
+
+The inventory panel provides a clean interface for managing your saved recordings:
+
+![Inventory Interface](https://github.com/owebeeone/click-reel/blob/main/docs/resources/click-reel-inventory.png?raw=true)
+
+**Features shown:**
+- **Search & Sort** - Find recordings by title or sort by date/name/frames
+- **Thumbnails** - Visual preview of each recording's first frame
+- **Metadata Display** - Duration, frame count, and timestamp for each reel
+- **Quick Actions** - View, export, or delete directly from the list
+- **Bulk Operations** - "Remove All" with confirmation for clearing storage
+
+Access the inventory anytime with `Ctrl+Shift+E` or click the inventory button on the recorder panel.
 
 ## Development
 
