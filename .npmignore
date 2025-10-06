@@ -1,0 +1,30 @@
+# Exclude demo and development files
+demo/
+src/
+docs/
+*.md
+!README.md
+
+# Test files
+**/*.test.ts
+**/*.test.tsx
+**/__tests__/
+vitest.config.ts
+
+# Build config
+vite.config.ts
+tsconfig.json
+tsconfig.build.json
+eslint.config.js
+.eslintrc.cjs
+.prettierrc
+.prettierignore
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
